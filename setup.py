@@ -16,14 +16,14 @@
 
 from distutils.core import setup
 
-import ipaddr
+import ipaddress
 
 
-setup(name='ipaddr',
+setup(name='ipaddress',
       maintainer='Google',
       maintainer_email='ipaddr-py-dev@googlegroups.com',
       version=ipaddr.__version__,
-      url='http://code.google.com/p/ipaddr-py/',
+      url='http://code.google.com/p/ipaddress-py/',
       license='Apache License, Version 2.0',
       classifiers=[
           'Development Status :: 5 - Production/Stable',
@@ -33,4 +33,4 @@ setup(name='ipaddr',
           'Topic :: Internet',
           'Topic :: Software Development :: Libraries',
           'Topic :: System :: Networking'],
-      py_modules=['ipaddr'])
+      py_modules=['ipaddress'])
