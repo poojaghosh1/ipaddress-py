@@ -31,31 +31,28 @@ else:
 class IpaddrUnitTest(unittest.TestCase):
 
     def setUp(self):
-        self.ipv4 = ipaddress.IPv4Interface('1.2.3.4/24')
-        self.ipv4_hostmask = ipaddress.IPv4Interface('10.0.0.1/0.255.255.255')
-
-        self.ipv6 = ipaddress.IPv6Interface('2001:658:22a:cafe:200:0:0:1/64')
+        self.ipv4_address = ipaddress.IPv4Address('1.2.3.4')
+        self.ipv4_interface = ipaddress.IPv4Interface('1.2.3.4/24')
+        self.ipv4_network = ipaddress.IPv4Network('1.2.3.0/24')
+        #self.ipv4_hostmask = ipaddress.IPv4Interface('10.0.0.1/0.255.255.255')
+        self.ipv6_address = ipaddress.IPv6Interface(
+            '2001:658:22a:cafe:200:0:0:1')
+        self.ipv6_interface = ipaddress.IPv6Interface(
+            '2001:658:22a:cafe:200:0:0:1/64')
+        self.ipv6_network = ipaddress.IPv6Network('2001:658:22a:cafe::/64')
 
     def tearDown(self):
-        del(self.ipv4)
-        del(self.ipv4_hostmask)
-        del(self.ipv6)
-        del(self)
+        #del(self.ipv4)
+        #del(self.ipv4_hostmask)
+        #del(self.ipv6)
+        #del(self)
+        pass
 
     def testRepr(self):
         self.assertEqual("IPv4Interface('1.2.3.4/32')",
                          repr(ipaddress.IPv4Interface('1.2.3.4')))
         self.assertEqual("IPv6Interface('::1/128')",
                          repr(ipaddress.IPv6Interface('::1')))
-
-    def testAutoMasking(self):
-        addr1 = ipaddress.IPv4Interface('1.1.1.255/24')
-        addr1_masked = ipaddress.IPv4Interface('1.1.1.0/24')
-        self.assertEqual(addr1_masked, addr1.masked())
-
-        addr2 = ipaddress.IPv6Interface('2000:cafe::efac:100/96')
-        addr2_masked = ipaddress.IPv6Interface('2000:cafe::/96')
-        self.assertEqual(addr2_masked, addr2.masked())
 
     # issue57
     def testAddressIntMath(self):
@@ -159,15 +156,14 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(False, ipaddress.IPv4Interface(1)._is_hostmask('1.a.2.3'))
 
     def testGetNetwork(self):
-        self.assertEqual(int(self.ipv4.network_address), 16909056)
-        self.assertEqual(str(self.ipv4.network_address), '1.2.3.0')
-        self.assertEqual(str(self.ipv4_hostmask.network_address), '10.0.0.0')
+        self.assertEqual(int(self.ipv4_network.network_address), 16909056)
+        self.assertEqual(str(self.ipv4_network.network_address), '1.2.3.0')
 
-        self.assertEqual(int(self.ipv6.network_address),
+        self.assertEqual(int(self.ipv6_network.network_address),
                          42540616829182469433403647294022090752)
-        self.assertEqual(str(self.ipv6.network_address),
+        self.assertEqual(str(self.ipv6_network.network_address),
                          '2001:658:22a:cafe::')
-        self.assertEqual(str(self.ipv6.hostmask),
+        self.assertEqual(str(self.ipv6_network.hostmask),
                          '::ffff:ffff:ffff:ffff')
 
     def testBadVersionComparison(self):
@@ -213,7 +209,8 @@ class IpaddrUnitTest(unittest.TestCase):
                                                  key=ipaddress.get_mixed_type_key))
 
     def testIpFromInt(self):
-        self.assertEqual(self.ipv4.ip, ipaddress.IPv4Interface(16909060).ip)
+        self.assertEqual(self.ipv4_interface._ip,
+                         ipaddress.IPv4Interface(16909060)._ip)
         self.assertRaises(ipaddress.AddressValueError,
                           ipaddress.IPv4Interface, 2**32)
         self.assertRaises(ipaddress.AddressValueError,
@@ -225,26 +222,27 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(ipv6, ipaddress.ip_network(int(ipv6)))
 
         v6_int = 42540616829182469433547762482097946625
-        self.assertEqual(self.ipv6.ip, ipaddress.IPv6Interface(v6_int).ip)
+        self.assertEqual(self.ipv6_interface._ip,
+                         ipaddress.IPv6Interface(v6_int)._ip)
         self.assertRaises(ipaddress.AddressValueError,
                           ipaddress.IPv6Interface, 2**128)
         self.assertRaises(ipaddress.AddressValueError,
                           ipaddress.IPv6Interface, -1)
 
-        self.assertEqual(ipaddress.ip_network(self.ipv4.ip).version, 4)
-        self.assertEqual(ipaddress.ip_network(self.ipv6.ip).version, 6)
+        self.assertEqual(ipaddress.ip_network(self.ipv4_address._ip).version, 4)
+        self.assertEqual(ipaddress.ip_network(self.ipv6_address._ip).version, 6)
 
     if ipaddress._compat_has_real_bytes: # on python3+
         def testIpFromPacked(self):
             ip = ipaddress.ip_network
 
-            self.assertEqual(self.ipv4.ip,
+            self.assertEqual(self.ipv4_interface.ip,
                              ip(_cb('\x01\x02\x03\x04')).ip)
             self.assertEqual(ip('255.254.253.252'),
                              ip(_cb('\xff\xfe\xfd\xfc')))
             self.assertRaises(ValueError, ipaddress.ip_network, _cb('\x00' * 3))
             self.assertRaises(ValueError, ipaddress.ip_network, _cb('\x00' * 5))
-            self.assertEqual(self.ipv6.ip,
+            self.assertEqual(self.ipv6_interface.ip,
                              ip(_cb('\x20\x01\x06\x58\x02\x2a\xca\xfe'
                                '\x02\x00\x00\x00\x00\x00\x00\x01')).ip)
             self.assertEqual(ip('ffff:2:3:4:ffff::'),
@@ -256,128 +254,134 @@ class IpaddrUnitTest(unittest.TestCase):
             self.assertRaises(ValueError, ip, _cb('\x00' * 17))
 
     def testGetIp(self):
-        self.assertEqual(int(self.ipv4.ip), 16909060)
-        self.assertEqual(str(self.ipv4.ip), '1.2.3.4')
-        self.assertEqual(str(self.ipv4_hostmask.ip), '10.0.0.1')
+        self.assertEqual(int(self.ipv4_interface.ip), 16909060)
+        self.assertEqual(str(self.ipv4_interface.ip), '1.2.3.4')
 
-        self.assertEqual(int(self.ipv6.ip),
+        self.assertEqual(int(self.ipv6_interface.ip),
                          42540616829182469433547762482097946625)
-        self.assertEqual(str(self.ipv6.ip),
+        self.assertEqual(str(self.ipv6_interface.ip),
                          '2001:658:22a:cafe:200::1')
 
     def testGetNetmask(self):
-        self.assertEqual(int(self.ipv4.netmask), 4294967040L)
-        self.assertEqual(str(self.ipv4.netmask), '255.255.255.0')
-        self.assertEqual(str(self.ipv4_hostmask.netmask), '255.0.0.0')
-        self.assertEqual(int(self.ipv6.netmask),
+        self.assertEqual(int(self.ipv4_network.netmask), 4294967040L)
+        self.assertEqual(str(self.ipv4_network.netmask), '255.255.255.0')
+        self.assertEqual(int(self.ipv6_network.netmask),
                          340282366920938463444927863358058659840)
-        self.assertEqual(self.ipv6.prefixlen, 64)
+        self.assertEqual(self.ipv6_network.prefixlen, 64)
 
     def testZeroNetmask(self):
         ipv4_zero_netmask = ipaddress.IPv4Interface('1.2.3.4/0')
-        self.assertEqual(int(ipv4_zero_netmask.netmask), 0)
-        self.assertTrue(ipv4_zero_netmask._is_valid_netmask(str(0)))
+        self.assertEqual(int(ipv4_zero_netmask.network.netmask), 0)
+        self.assertTrue(ipv4_zero_netmask.network._is_valid_netmask(
+                str(0)))
 
         ipv6_zero_netmask = ipaddress.IPv6Interface('::1/0')
-        self.assertEqual(int(ipv6_zero_netmask.netmask), 0)
-        self.assertTrue(ipv6_zero_netmask._is_valid_netmask(str(0)))
+        self.assertEqual(int(ipv6_zero_netmask.network.netmask), 0)
+        self.assertTrue(ipv6_zero_netmask.network._is_valid_netmask(
+                str(0)))
 
     def testGetBroadcast(self):
-        self.assertEqual(int(self.ipv4.broadcast_address), 16909311L)
-        self.assertEqual(str(self.ipv4.broadcast_address), '1.2.3.255')
+        self.assertEqual(int(self.ipv4_network.broadcast_address), 16909311L)
+        self.assertEqual(str(self.ipv4_network.broadcast_address), '1.2.3.255')
 
-        self.assertEqual(int(self.ipv6.broadcast_address),
+        self.assertEqual(int(self.ipv6_network.broadcast_address),
                          42540616829182469451850391367731642367)
-        self.assertEqual(str(self.ipv6.broadcast_address),
+        self.assertEqual(str(self.ipv6_network.broadcast_address),
                          '2001:658:22a:cafe:ffff:ffff:ffff:ffff')
 
     def testGetPrefixlen(self):
-        self.assertEqual(self.ipv4.prefixlen, 24)
-
-        self.assertEqual(self.ipv6.prefixlen, 64)
+        self.assertEqual(self.ipv4_interface.prefixlen, 24)
+        self.assertEqual(self.ipv6_interface.prefixlen, 64)
 
     def testGetSupernet(self):
-        self.assertEqual(self.ipv4.supernet().prefixlen, 23)
-        self.assertEqual(str(self.ipv4.supernet().network_address), '1.2.2.0')
-        self.assertEqual(ipaddress.IPv4Interface('0.0.0.0/0').supernet(),
-                         ipaddress.IPv4Interface('0.0.0.0/0'))
+        self.assertEqual(self.ipv4_network.supernet().prefixlen, 23)
+        self.assertEqual(str(self.ipv4_network.supernet().network_address),
+                         '1.2.2.0')
+        self.assertEqual(
+            ipaddress.IPv4Interface('0.0.0.0/0').network.supernet(),
+            ipaddress.IPv4Network('0.0.0.0/0'))
 
-        self.assertEqual(self.ipv6.supernet().prefixlen, 63)
-        self.assertEqual(str(self.ipv6.supernet().network_address),
+        self.assertEqual(self.ipv6_network.supernet().prefixlen, 63)
+        self.assertEqual(str(self.ipv6_network.supernet().network_address),
                          '2001:658:22a:cafe::')
-        self.assertEqual(ipaddress.IPv6Interface('::0/0').supernet(),
-                         ipaddress.IPv6Interface('::0/0'))
+        self.assertEqual(ipaddress.IPv6Interface('::0/0').network.supernet(),
+                         ipaddress.IPv6Network('::0/0'))
 
     def testGetSupernet3(self):
-        self.assertEqual(self.ipv4.supernet(3).prefixlen, 21)
-        self.assertEqual(str(self.ipv4.supernet(3).network_address), '1.2.0.0')
+        self.assertEqual(self.ipv4_network.supernet(3).prefixlen, 21)
+        self.assertEqual(str(self.ipv4_network.supernet(3).network_address),
+                         '1.2.0.0')
 
-        self.assertEqual(self.ipv6.supernet(3).prefixlen, 61)
-        self.assertEqual(str(self.ipv6.supernet(3).network_address),
+        self.assertEqual(self.ipv6_network.supernet(3).prefixlen, 61)
+        self.assertEqual(str(self.ipv6_network.supernet(3).network_address),
                          '2001:658:22a:caf8::')
 
     def testGetSupernet4(self):
-        self.assertRaises(ValueError, self.ipv4.supernet, prefixlen_diff=2,
-                          new_prefix=1)
-        self.assertRaises(ValueError, self.ipv4.supernet, new_prefix=25)
-        self.assertEqual(self.ipv4.supernet(prefixlen_diff=2),
-                         self.ipv4.supernet(new_prefix=22))
+        self.assertRaises(ValueError, self.ipv4_network.supernet,
+                          prefixlen_diff=2, new_prefix=1)
+        self.assertRaises(ValueError, self.ipv4_network.supernet, new_prefix=25)
+        self.assertEqual(self.ipv4_network.supernet(prefixlen_diff=2),
+                         self.ipv4_network.supernet(new_prefix=22))
 
-        self.assertRaises(ValueError, self.ipv6.supernet, prefixlen_diff=2,
-                          new_prefix=1)
-        self.assertRaises(ValueError, self.ipv6.supernet, new_prefix=65)
-        self.assertEqual(self.ipv6.supernet(prefixlen_diff=2),
-                         self.ipv6.supernet(new_prefix=62))
+        self.assertRaises(ValueError, self.ipv6_network.supernet,
+                          prefixlen_diff=2, new_prefix=1)
+        self.assertRaises(ValueError, self.ipv6_network.supernet, new_prefix=65)
+        self.assertEqual(self.ipv6_network.supernet(prefixlen_diff=2),
+                         self.ipv6_network.supernet(new_prefix=62))
 
     def testIterSubnets(self):
-        self.assertEqual(self.ipv4.subnet(), list(self.ipv4.iter_subnets()))
-        self.assertEqual(self.ipv6.subnet(), list(self.ipv6.iter_subnets()))
+        self.assertEqual(self.ipv4_network.subnet(),
+                         list(self.ipv4_network.iter_subnets()))
+        self.assertEqual(self.ipv6_network.subnet(),
+                         list(self.ipv6_network.iter_subnets()))
 
     def testIterHosts(self):
         self.assertEqual([ipaddress.IPv4Address('2.0.0.0'),
                           ipaddress.IPv4Address('2.0.0.1')],
-                         list(ipaddress.ip_interface('2.0.0.0/31').iterhosts()))
+                         list(ipaddress.ip_network('2.0.0.0/31').iterhosts()))
 
     def testFancySubnetting(self):
-        self.assertEqual(sorted(self.ipv4.subnet(prefixlen_diff=3)),
-                         sorted(self.ipv4.subnet(new_prefix=27)))
-        self.assertRaises(ValueError, self.ipv4.subnet, new_prefix=23)
-        self.assertRaises(ValueError, self.ipv4.subnet,
+        self.assertEqual(sorted(self.ipv4_network.subnet(prefixlen_diff=3)),
+                         sorted(self.ipv4_network.subnet(new_prefix=27)))
+        self.assertRaises(ValueError, self.ipv4_network.subnet, new_prefix=23)
+        self.assertRaises(ValueError, self.ipv4_network.subnet,
                           prefixlen_diff=3, new_prefix=27)
-        self.assertEqual(sorted(self.ipv6.subnet(prefixlen_diff=4)),
-                         sorted(self.ipv6.subnet(new_prefix=68)))
-        self.assertRaises(ValueError, self.ipv6.subnet, new_prefix=63)
-        self.assertRaises(ValueError, self.ipv6.subnet,
+        self.assertEqual(sorted(self.ipv6_network.subnet(prefixlen_diff=4)),
+                         sorted(self.ipv6_network.subnet(new_prefix=68)))
+        self.assertRaises(ValueError, self.ipv6_network.subnet, new_prefix=63)
+        self.assertRaises(ValueError, self.ipv6_network.subnet,
                           prefixlen_diff=4, new_prefix=68)
 
     def testGetSubnet(self):
-        self.assertEqual(self.ipv4.subnet()[0].prefixlen, 25)
-        self.assertEqual(str(self.ipv4.subnet()[0].network_address), '1.2.3.0')
-        self.assertEqual(str(self.ipv4.subnet()[1].network_address), '1.2.3.128')
+        self.assertEqual(self.ipv4_network.subnet()[0].prefixlen, 25)
+        self.assertEqual(str(self.ipv4_network.subnet()[0].network_address),
+                         '1.2.3.0')
+        self.assertEqual(str(self.ipv4_network.subnet()[1].network_address),
+                         '1.2.3.128')
 
-        self.assertEqual(self.ipv6.subnet()[0].prefixlen, 65)
+        self.assertEqual(self.ipv6_network.subnet()[0].prefixlen, 65)
 
     def testGetSubnetForSingle32(self):
-        ip = ipaddress.IPv4Interface('1.2.3.4/32')
+        ip = ipaddress.IPv4Network('1.2.3.4/32')
         subnets1 = [str(x) for x in ip.subnet()]
         subnets2 = [str(x) for x in ip.subnet(2)]
         self.assertEqual(subnets1, ['1.2.3.4/32'])
         self.assertEqual(subnets1, subnets2)
 
     def testGetSubnetForSingle128(self):
-        ip = ipaddress.IPv6Interface('::1/128')
+        ip = ipaddress.IPv6Network('::1/128')
         subnets1 = [str(x) for x in ip.subnet()]
         subnets2 = [str(x) for x in ip.subnet(2)]
         self.assertEqual(subnets1, ['::1/128'])
         self.assertEqual(subnets1, subnets2)
 
     def testSubnet2(self):
-        ips = [str(x) for x in self.ipv4.subnet(2)]
+        ips = [str(x) for x in self.ipv4_network.subnet(2)]
         self.assertEqual(
             ips,
             ['1.2.3.0/26', '1.2.3.64/26', '1.2.3.128/26', '1.2.3.192/26'])
 
-        ipsv6 = [str(x) for x in self.ipv6.subnet(2)]
+        ipsv6 = [str(x) for x in self.ipv6_network.subnet(2)]
         self.assertEqual(
             ipsv6,
             ['2001:658:22a:cafe::/66',
@@ -386,38 +390,50 @@ class IpaddrUnitTest(unittest.TestCase):
              '2001:658:22a:cafe:c000::/66'])
 
     def testSubnetFailsForLargeCidrDiff(self):
-        self.assertRaises(ValueError, self.ipv4.subnet, 9)
-        self.assertRaises(ValueError, self.ipv6.subnet, 65)
+        self.assertRaises(ValueError,
+                          self.ipv4_interface.network.subnet, 9)
+        self.assertRaises(ValueError, self.ipv4_network.subnet, 9)
+        self.assertRaises(ValueError,
+                          self.ipv6_interface.network.subnet, 65)
+        self.assertRaises(ValueError, self.ipv6_network.subnet, 65)
 
     def testSupernetFailsForLargeCidrDiff(self):
-        self.assertRaises(ValueError, self.ipv4.supernet, 25)
-        self.assertRaises(ValueError, self.ipv6.supernet, 65)
+        self.assertRaises(ValueError,
+                          self.ipv4_interface.network.supernet, 25)
+        self.assertRaises(ValueError,
+                          self.ipv6_interface.network.supernet, 65)
 
     def testSubnetFailsForNegativeCidrDiff(self):
-        self.assertRaises(ValueError, self.ipv4.subnet, -1)
-        self.assertRaises(ValueError, self.ipv6.subnet, -1)
+        self.assertRaises(ValueError, self.ipv4_interface.network.subnet, -1)
+        self.assertRaises(ValueError, self.ipv4_network.subnet, -1)
+        self.assertRaises(ValueError, self.ipv6_interface.network.subnet, -1)
+        self.assertRaises(ValueError, self.ipv6_network.subnet, -1)
 
     def testGetNumHosts(self):
-        self.assertEqual(self.ipv4.numhosts, 256)
-        self.assertEqual(self.ipv4.subnet()[0].numhosts, 128)
-        self.assertEqual(self.ipv4.supernet().numhosts, 512)
+        self.assertEqual(self.ipv4_network.numhosts, 256)
+        self.assertEqual(self.ipv4_network.subnet()[0].numhosts, 128)
+        self.assertEqual(self.ipv4_network.supernet().numhosts, 512)
 
-        self.assertEqual(self.ipv6.numhosts, 18446744073709551616)
-        self.assertEqual(self.ipv6.subnet()[0].numhosts, 9223372036854775808)
-        self.assertEqual(self.ipv6.supernet().numhosts, 36893488147419103232)
+        self.assertEqual(self.ipv6_network.numhosts, 18446744073709551616)
+        self.assertEqual(self.ipv6_network.subnet()[0].numhosts,
+                         9223372036854775808)
+        self.assertEqual(self.ipv6_network.supernet().numhosts,
+                         36893488147419103232)
 
     def testContains(self):
-        self.assertTrue(ipaddress.IPv4Interface('1.2.3.128/25') in self.ipv4)
-        self.assertFalse(ipaddress.IPv4Interface('1.2.4.1/24') in self.ipv4)
-        self.assertTrue(self.ipv4 in self.ipv4)
-        self.assertTrue(self.ipv6 in self.ipv6)
+        self.assertTrue(ipaddress.IPv4Interface('1.2.3.128/25') in
+                        self.ipv4_network)
+        self.assertFalse(ipaddress.IPv4Interface('1.2.4.1/24') in
+                         self.ipv4_network)
+        self.assertTrue(self.ipv4_network in self.ipv4_network)
+        self.assertTrue(self.ipv6_network in self.ipv6_network)
         # We can test addresses and string as well.
         addr1 = ipaddress.IPv4Address('1.2.3.37')
-        self.assertTrue(addr1 in self.ipv4)
+        self.assertTrue(addr1 in self.ipv4_network)
         # issue 61, bad network comparison on like-ip'd network objects
         # with identical broadcast addresses.
-        self.assertFalse(ipaddress.IPv4Interface('1.1.0.0/16').__contains__(
-                ipaddress.IPv4Interface('1.0.0.0/15')))
+        self.assertFalse(ipaddress.IPv4Network('1.1.0.0/16').__contains__(
+                ipaddress.IPv4Network('1.0.0.0/15')))
 
     def testBadAddress(self):
         self.assertRaises(ipaddress.AddressValueError, ipaddress.IPv4Interface,
@@ -450,15 +466,15 @@ class IpaddrUnitTest(unittest.TestCase):
                           ipaddress.IPv6Interface, '::1/129')
 
     def testNth(self):
-        self.assertEqual(str(self.ipv4[5]), '1.2.3.5')
-        self.assertRaises(IndexError, self.ipv4.__getitem__, 256)
+        self.assertEqual(str(self.ipv4_network[5]), '1.2.3.5')
+        self.assertRaises(IndexError, self.ipv4_network.__getitem__, 256)
 
-        self.assertEqual(str(self.ipv6[5]),
+        self.assertEqual(str(self.ipv6_network[5]),
                          '2001:658:22a:cafe::5')
 
     def testGetitem(self):
         # http://code.google.com/p/ipaddr-py/issues/detail?id=15
-        addr = ipaddress.IPv4Interface('172.31.255.128/255.255.255.240')
+        addr = ipaddress.IPv4Network('172.31.255.128/255.255.255.240')
         self.assertEqual(28, addr.prefixlen)
         addr_list = list(addr)
         self.assertEqual('172.31.255.128', str(addr_list[0]))
@@ -468,55 +484,62 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(addr_list[-1], addr[-1])
 
     def testEqual(self):
-        self.assertTrue(self.ipv4 == ipaddress.IPv4Interface('1.2.3.4/24'))
-        self.assertFalse(self.ipv4 == ipaddress.IPv4Interface('1.2.3.4/23'))
-        self.assertFalse(self.ipv4 == ipaddress.IPv6Interface('::1.2.3.4/24'))
-        self.assertFalse(self.ipv4 == '')
-        self.assertFalse(self.ipv4 == [])
-        self.assertFalse(self.ipv4 == 2)
-        self.assertTrue(ipaddress.ip_network('1.1.1.1/32') ==
-                        ipaddress.ip_address('1.1.1.1'))
-        self.assertTrue(ipaddress.ip_interface('1.1.1.1/24') ==
-                        ipaddress.ip_address('1.1.1.1'))
-        self.assertFalse(ipaddress.ip_network('1.1.1.0/24') ==
-                         ipaddress.ip_address('1.1.1.1'))
+        self.assertTrue(self.ipv4_interface ==
+                        ipaddress.IPv4Interface('1.2.3.4/24'))
+        self.assertFalse(self.ipv4_interface ==
+                         ipaddress.IPv4Interface('1.2.3.4/23'))
+        self.assertFalse(self.ipv4_interface ==
+                         ipaddress.IPv6Interface('::1.2.3.4/24'))
+        self.assertFalse(self.ipv4_interface == '')
+        self.assertFalse(self.ipv4_interface == [])
+        self.assertFalse(self.ipv4_interface == 2)
 
-        self.assertTrue(self.ipv6 ==
+        self.assertTrue(self.ipv6_interface ==
             ipaddress.IPv6Interface('2001:658:22a:cafe:200::1/64'))
-        self.assertTrue(ipaddress.ip_network('::1/128') ==
-                        ipaddress.ip_address('::1'))
-        self.assertTrue(ipaddress.ip_interface('::1/127') ==
-                        ipaddress.ip_address('::1'))
-        self.assertFalse(ipaddress.ip_network('::0/127') ==
-                         ipaddress.ip_address('::1'))
-        self.assertFalse(self.ipv6 ==
+        self.assertFalse(self.ipv6_interface ==
             ipaddress.IPv6Interface('2001:658:22a:cafe:200::1/63'))
-        self.assertFalse(self.ipv6 == ipaddress.IPv4Interface('1.2.3.4/23'))
-        self.assertFalse(self.ipv6 == '')
-        self.assertFalse(self.ipv6 == [])
-        self.assertFalse(self.ipv6 == 2)
+        self.assertFalse(self.ipv6_interface ==
+                         ipaddress.IPv4Interface('1.2.3.4/23'))
+        self.assertFalse(self.ipv6_interface == '')
+        self.assertFalse(self.ipv6_interface == [])
+        self.assertFalse(self.ipv6_interface == 2)
 
     def testNotEqual(self):
-        self.assertFalse(self.ipv4 != ipaddress.IPv4Interface('1.2.3.4/24'))
-        self.assertTrue(self.ipv4 != ipaddress.IPv4Interface('1.2.3.4/23'))
-        self.assertTrue(self.ipv4 != ipaddress.IPv6Interface('::1.2.3.4/24'))
-        self.assertTrue(self.ipv4 != '')
-        self.assertTrue(self.ipv4 != [])
-        self.assertTrue(self.ipv4 != 2)
+        self.assertFalse(self.ipv4_interface !=
+                         ipaddress.IPv4Interface('1.2.3.4/24'))
+        self.assertTrue(self.ipv4_interface !=
+                        ipaddress.IPv4Interface('1.2.3.4/23'))
+        self.assertTrue(self.ipv4_interface !=
+                        ipaddress.IPv6Interface('::1.2.3.4/24'))
+        self.assertTrue(self.ipv4_interface != '')
+        self.assertTrue(self.ipv4_interface != [])
+        self.assertTrue(self.ipv4_interface != 2)
 
-        addr2 = ipaddress.ip_address('2001:658:22a:cafe:200::1')
-        self.assertFalse(self.ipv6 !=
+        self.assertTrue(self.ipv4_address !=
+                         ipaddress.IPv4Address('1.2.3.5'))
+        self.assertTrue(self.ipv4_address != '')
+        self.assertTrue(self.ipv4_address != [])
+        self.assertTrue(self.ipv4_address != 2)
+
+        self.assertFalse(self.ipv6_interface !=
             ipaddress.IPv6Interface('2001:658:22a:cafe:200::1/64'))
-        self.assertTrue(self.ipv6 !=
+        self.assertTrue(self.ipv6_interface !=
             ipaddress.IPv6Interface('2001:658:22a:cafe:200::1/63'))
-        self.assertTrue(self.ipv6 != ipaddress.IPv4Interface('1.2.3.4/23'))
-        self.assertTrue(self.ipv6 != '')
-        self.assertTrue(self.ipv6 != [])
-        self.assertTrue(self.ipv6 != 2)
+        self.assertTrue(self.ipv6_interface !=
+                        ipaddress.IPv4Interface('1.2.3.4/23'))
+        self.assertTrue(self.ipv6_interface != '')
+        self.assertTrue(self.ipv6_interface != [])
+        self.assertTrue(self.ipv6_interface != 2)
+
+        self.assertTrue(self.ipv6_address !=
+                        ipaddress.IPv4Address('1.2.3.4'))
+        self.assertTrue(self.ipv6_address != '')
+        self.assertTrue(self.ipv6_address != [])
+        self.assertTrue(self.ipv6_address != 2)
 
     def testSlash32Constructor(self):
-        self.assertEqual(str(ipaddress.IPv4Interface('1.2.3.4/255.255.255.255')),
-                          '1.2.3.4/32')
+        self.assertEqual(str(ipaddress.IPv4Interface(
+                    '1.2.3.4/255.255.255.255')), '1.2.3.4/32')
 
     def testSlash128Constructor(self):
         self.assertEqual(str(ipaddress.IPv6Interface('::1/128')),
@@ -536,39 +559,40 @@ class IpaddrUnitTest(unittest.TestCase):
         ip6 = ipaddress.IPv4Address('1.1.1.0')
         # check that addreses are subsumed properly.
         collapsed = ipaddress.collapse_address_list([ip1, ip2, ip3, ip4, ip5, ip6])
-        self.assertEqual(collapsed, [ipaddress.IPv4Interface('1.1.1.0/30'),
-                                     ipaddress.IPv4Interface('1.1.1.4/32')])
+        self.assertEqual(collapsed, [ipaddress.IPv4Network('1.1.1.0/30'),
+                                     ipaddress.IPv4Network('1.1.1.4/32')])
 
         # test a mix of IP addresses and networks including some duplicates
         ip1 = ipaddress.IPv4Address('1.1.1.0')
         ip2 = ipaddress.IPv4Address('1.1.1.1')
         ip3 = ipaddress.IPv4Address('1.1.1.2')
         ip4 = ipaddress.IPv4Address('1.1.1.3')
-        ip5 = ipaddress.IPv4Interface('1.1.1.4/30')
-        ip6 = ipaddress.IPv4Interface('1.1.1.4/30')
+        #ip5 = ipaddress.IPv4Interface('1.1.1.4/30')
+        #ip6 = ipaddress.IPv4Interface('1.1.1.4/30')
         # check that addreses are subsumed properly.
-        collapsed = ipaddress.collapse_address_list([ip5, ip1, ip2, ip3, ip4, ip6])
-        self.assertEqual(collapsed, [ipaddress.IPv4Interface('1.1.1.0/29')])
+        collapsed = ipaddress.collapse_address_list([ip1, ip2, ip3, ip4])
+        self.assertEqual(collapsed, [ipaddress.IPv4Network('1.1.1.0/30')])
 
         # test only IP networks
-        ip1 = ipaddress.IPv4Interface('1.1.0.0/24')
-        ip2 = ipaddress.IPv4Interface('1.1.1.0/24')
-        ip3 = ipaddress.IPv4Interface('1.1.2.0/24')
-        ip4 = ipaddress.IPv4Interface('1.1.3.0/24')
-        ip5 = ipaddress.IPv4Interface('1.1.4.0/24')
+        ip1 = ipaddress.IPv4Network('1.1.0.0/24')
+        ip2 = ipaddress.IPv4Network('1.1.1.0/24')
+        ip3 = ipaddress.IPv4Network('1.1.2.0/24')
+        ip4 = ipaddress.IPv4Network('1.1.3.0/24')
+        ip5 = ipaddress.IPv4Network('1.1.4.0/24')
         # stored in no particular order b/c we want CollapseAddr to call [].sort
-        ip6 = ipaddress.IPv4Interface('1.1.0.0/22')
+        ip6 = ipaddress.IPv4Network('1.1.0.0/22')
         # check that addreses are subsumed properly.
-        collapsed = ipaddress.collapse_address_list([ip1, ip2, ip3, ip4, ip5, ip6])
-        self.assertEqual(collapsed, [ipaddress.IPv4Interface('1.1.0.0/22'),
-                                     ipaddress.IPv4Interface('1.1.4.0/24')])
+        collapsed = ipaddress.collapse_address_list([ip1, ip2, ip3, ip4, ip5,
+                                                     ip6])
+        self.assertEqual(collapsed, [ipaddress.IPv4Network('1.1.0.0/22'),
+                                     ipaddress.IPv4Network('1.1.4.0/24')])
 
         # test that two addresses are supernet'ed properly
         collapsed = ipaddress.collapse_address_list([ip1, ip2])
-        self.assertEqual(collapsed, [ipaddress.IPv4Interface('1.1.0.0/23')])
+        self.assertEqual(collapsed, [ipaddress.IPv4Network('1.1.0.0/23')])
 
         # test same IP networks
-        ip_same1 = ip_same2 = ipaddress.IPv4Interface('1.1.1.1/32')
+        ip_same1 = ip_same2 = ipaddress.IPv4Network('1.1.1.1/32')
         self.assertEqual(ipaddress.collapse_address_list([ip_same1, ip_same2]),
                          [ip_same1])
 
@@ -576,9 +600,9 @@ class IpaddrUnitTest(unittest.TestCase):
         ip_same1 = ip_same2 = ipaddress.IPv4Address('1.1.1.1')
         self.assertEqual(ipaddress.collapse_address_list([ip_same1, ip_same2]),
                          [ipaddress.ip_network('1.1.1.1/32')])
-        ip1 = ipaddress.IPv6Interface('::2001:1/100')
-        ip2 = ipaddress.IPv6Interface('::2002:1/120')
-        ip3 = ipaddress.IPv6Interface('::2001:1/96')
+        ip1 = ipaddress.IPv6Network('2001::/100')
+        ip2 = ipaddress.IPv6Network('2001::/120')
+        ip3 = ipaddress.IPv6Network('2001::/96')
         # test that ipv6 addresses are subsumed properly.
         collapsed = ipaddress.collapse_address_list([ip1, ip2, ip3])
         self.assertEqual(collapsed, [ip3])
@@ -634,26 +658,24 @@ class IpaddrUnitTest(unittest.TestCase):
 
     def testNetworkComparison(self):
         # ip1 and ip2 have the same network address
-        ip1 = ipaddress.IPv4Interface('1.1.1.0/24')
-        ip2 = ipaddress.IPv4Interface('1.1.1.1/24')
-        ip3 = ipaddress.IPv4Interface('1.1.2.0/24')
+        ip1 = ipaddress.IPv4Network('1.1.1.0/24')
+        ip2 = ipaddress.IPv4Network('1.1.1.1/32')
+        ip3 = ipaddress.IPv4Network('1.1.2.0/24')
 
         self.assertTrue(ip1 < ip3)
         self.assertTrue(ip3 > ip2)
 
-        self.assertEqual(ip1.compare_networks(ip2), 0)
-        self.assertTrue(ip1._get_networks_key() == ip2._get_networks_key())
+        #self.assertEqual(ip1.compare_networks(ip2), 0)
+        #self.assertTrue(ip1._get_networks_key() == ip2._get_networks_key())
         self.assertEqual(ip1.compare_networks(ip3), -1)
         self.assertTrue(ip1._get_networks_key() < ip3._get_networks_key())
 
-        ip1 = ipaddress.IPv6Interface('2001::2000/96')
-        ip2 = ipaddress.IPv6Interface('2001::2001/96')
-        ip3 = ipaddress.IPv6Interface('2001:ffff::2000/96')
+        ip1 = ipaddress.IPv6Network('2001:2000::/96')
+        ip2 = ipaddress.IPv6Network('2001:2001::/96')
+        ip3 = ipaddress.IPv6Network('2001:ffff:2000::/96')
 
         self.assertTrue(ip1 < ip3)
         self.assertTrue(ip3 > ip2)
-        self.assertEqual(ip1.compare_networks(ip2), 0)
-        self.assertTrue(ip1._get_networks_key() == ip2._get_networks_key())
         self.assertEqual(ip1.compare_networks(ip3), -1)
         self.assertTrue(ip1._get_networks_key() < ip3._get_networks_key())
 
@@ -714,11 +736,11 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertRaises(ValueError, ipaddress.ip_network, '::1/120')
 
     def testOverlaps(self):
-        other = ipaddress.IPv4Interface('1.2.3.0/30')
-        other2 = ipaddress.IPv4Interface('1.2.2.0/24')
-        other3 = ipaddress.IPv4Interface('1.2.2.64/26')
-        self.assertTrue(self.ipv4.overlaps(other))
-        self.assertFalse(self.ipv4.overlaps(other2))
+        other = ipaddress.IPv4Network('1.2.3.0/30')
+        other2 = ipaddress.IPv4Network('1.2.2.0/24')
+        other3 = ipaddress.IPv4Network('1.2.2.64/26')
+        self.assertTrue(self.ipv4_network.overlaps(other))
+        self.assertFalse(self.ipv4_network.overlaps(other2))
         self.assertTrue(other2.overlaps(other3))
 
     def testEmbeddedIpv4(self):
@@ -741,19 +763,19 @@ class IpaddrUnitTest(unittest.TestCase):
                           ipaddress.ip_address('FFFF::c000:201'))
 
     def testIPVersion(self):
-        self.assertEqual(self.ipv4.version, 4)
-        self.assertEqual(self.ipv6.version, 6)
+        self.assertEqual(self.ipv4_address.version, 4)
+        self.assertEqual(self.ipv6_address.version, 6)
 
     def testMaxPrefixLength(self):
-        self.assertEqual(self.ipv4.max_prefixlen, 32)
-        self.assertEqual(self.ipv6.max_prefixlen, 128)
+        self.assertEqual(self.ipv4_interface.max_prefixlen, 32)
+        self.assertEqual(self.ipv6_interface.max_prefixlen, 128)
 
     def testPacked(self):
-        self.assertEqual(self.ipv4.packed,
+        self.assertEqual(self.ipv4_address.packed,
                          _cb('\x01\x02\x03\x04'))
         self.assertEqual(ipaddress.IPv4Interface('255.254.253.252').packed,
                          _cb('\xff\xfe\xfd\xfc'))
-        self.assertEqual(self.ipv6.packed,
+        self.assertEqual(self.ipv6_address.packed,
                          _cb('\x20\x01\x06\x58\x02\x2a\xca\xfe'
                              '\x02\x00\x00\x00\x00\x00\x00\x01'))
         self.assertEqual(ipaddress.IPv6Interface('ffff:2:3:4:ffff::').packed,
@@ -834,7 +856,8 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(True, ipaddress.ip_network('fecf::').is_site_local)
         self.assertEqual(True, ipaddress.ip_network(
                 'feff:ffff:ffff:ffff::').is_site_local)
-        self.assertEqual(False, ipaddress.ip_network('fbf:ffff::').is_site_local)
+        self.assertEqual(False, ipaddress.ip_network(
+                'fbf:ffff::').is_site_local)
         self.assertEqual(False, ipaddress.ip_network('ff00::').is_site_local)
 
         self.assertEqual(True, ipaddress.ip_network('fc00::').is_private)
@@ -844,11 +867,13 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(False, ipaddress.ip_network('fe00::').is_private)
 
         self.assertEqual(True, ipaddress.ip_network('fea0::').is_link_local)
-        self.assertEqual(True, ipaddress.ip_network('febf:ffff::').is_link_local)
-        self.assertEqual(False, ipaddress.ip_network('fe7f:ffff::').is_link_local)
+        self.assertEqual(True, ipaddress.ip_network(
+                'febf:ffff::').is_link_local)
+        self.assertEqual(False, ipaddress.ip_network(
+                'fe7f:ffff::').is_link_local)
         self.assertEqual(False, ipaddress.ip_network('fec0::').is_link_local)
 
-        self.assertEqual(True, ipaddress.ip_network('0:0::0:01').is_loopback)
+        self.assertEqual(True, ipaddress.ip_interface('0:0::0:01').is_loopback)
         self.assertEqual(False, ipaddress.ip_interface('::1/127').is_loopback)
         self.assertEqual(False, ipaddress.ip_network('::').is_loopback)
         self.assertEqual(False, ipaddress.ip_network('::2').is_loopback)
@@ -866,7 +891,8 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(True, ipaddress.ip_address('fecf::').is_site_local)
         self.assertEqual(True, ipaddress.ip_address(
                 'feff:ffff:ffff:ffff::').is_site_local)
-        self.assertEqual(False, ipaddress.ip_address('fbf:ffff::').is_site_local)
+        self.assertEqual(False, ipaddress.ip_address(
+                'fbf:ffff::').is_site_local)
         self.assertEqual(False, ipaddress.ip_address('ff00::').is_site_local)
 
         self.assertEqual(True, ipaddress.ip_address('fc00::').is_private)
@@ -876,8 +902,10 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(False, ipaddress.ip_address('fe00::').is_private)
 
         self.assertEqual(True, ipaddress.ip_address('fea0::').is_link_local)
-        self.assertEqual(True, ipaddress.ip_address('febf:ffff::').is_link_local)
-        self.assertEqual(False, ipaddress.ip_address('fe7f:ffff::').is_link_local)
+        self.assertEqual(True, ipaddress.ip_address(
+                'febf:ffff::').is_link_local)
+        self.assertEqual(False, ipaddress.ip_address(
+                'fe7f:ffff::').is_link_local)
         self.assertEqual(False, ipaddress.ip_address('fec0::').is_link_local)
 
         self.assertEqual(True, ipaddress.ip_address('0:0::0:01').is_loopback)
@@ -922,11 +950,11 @@ class IpaddrUnitTest(unittest.TestCase):
         ip1 = ipaddress.ip_address('10.1.1.0')
         ip2 = ipaddress.ip_address('1::')
         dummy = {}
-        dummy[self.ipv4] = None
-        dummy[self.ipv6] = None
+        dummy[self.ipv4_address] = None
+        dummy[self.ipv6_address] = None
         dummy[ip1] = None
         dummy[ip2] = None
-        self.assertTrue(self.ipv4 in dummy)
+        self.assertTrue(self.ipv4_address in dummy)
         self.assertTrue(ip2 in dummy)
 
     def testCopyConstructor(self):
@@ -984,15 +1012,16 @@ class IpaddrUnitTest(unittest.TestCase):
                          addr3.exploded)
 
     def testIntRepresentation(self):
-        self.assertEqual(16909060, int(self.ipv4))
-        self.assertEqual(42540616829182469433547762482097946625, int(self.ipv6))
+        self.assertEqual(16909060, int(self.ipv4_address))
+        self.assertEqual(42540616829182469433547762482097946625,
+                         int(self.ipv6_address))
 
     def testHexRepresentation(self):
         self.assertEqual(hex(0x1020304),
-                         hex(self.ipv4))
+                         hex(self.ipv4_address))
 
         self.assertEqual(hex(0x20010658022ACAFE0200000000000001),
-                         hex(self.ipv6))
+                         hex(self.ipv6_address))
 
     # backwards compatibility
     def testBackwardsCompability(self):
@@ -1005,8 +1034,8 @@ class IpaddrUnitTest(unittest.TestCase):
                          [ipaddress.ip_network('::42:0/113')])
 
         self.assertTrue(
-            ipaddress.ip_interface('1::/8').CompareNetworks(
-                ipaddress.ip_interface('2::/9')) < 0)
+            ipaddress.ip_network('1::/128').CompareNetworks(
+                ipaddress.ip_network('2::/128')) < 0)
 
         self.assertEqual(ipaddress.ip_network('1::/16').Contains(
             ipaddress.ip_network('2::/16')), False)
@@ -1035,54 +1064,67 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(ipaddress.ip_network(1, version=6).version, 6)
 
     def testWithStar(self):
-        self.assertEqual(str(self.ipv4.with_prefixlen), "1.2.3.4/24")
-        self.assertEqual(str(self.ipv4.with_netmask), "1.2.3.4/255.255.255.0")
-        self.assertEqual(str(self.ipv4.with_hostmask), "1.2.3.4/0.0.0.255")
+        self.assertEqual(str(self.ipv4_interface.with_prefixlen), "1.2.3.4/24")
+        self.assertEqual(str(self.ipv4_interface.with_netmask),
+                         "1.2.3.4/255.255.255.0")
+        self.assertEqual(str(self.ipv4_interface.with_hostmask), "1.2.3.4/0.0.0.255")
 
-        self.assertEqual(str(self.ipv6.with_prefixlen),
+        self.assertEqual(str(self.ipv6_interface.with_prefixlen),
                          '2001:658:22a:cafe:200::1/64')
         # rfc3513 sec 2.3 says that ipv6 only uses cidr notation for
         # subnets
-        self.assertEqual(str(self.ipv6.with_netmask),
+        self.assertEqual(str(self.ipv6_interface.with_netmask),
                          '2001:658:22a:cafe:200::1/64')
         # this probably don't make much sense, but it's included for
         # compatibility with ipv4
-        self.assertEqual(str(self.ipv6.with_hostmask),
+        self.assertEqual(str(self.ipv6_interface.with_hostmask),
                          '2001:658:22a:cafe:200::1/::ffff:ffff:ffff:ffff')
 
     def testNetworkElementCaching(self):
         # V4 - make sure we're empty
-        self.assertFalse(self.ipv4._cache.has_key('network_address'))
-        self.assertFalse(self.ipv4._cache.has_key('broadcast_address'))
-        self.assertFalse(self.ipv4._cache.has_key('hostmask'))
+        self.assertFalse(self.ipv4_network._cache.has_key('network_address'))
+        self.assertFalse(self.ipv4_network._cache.has_key('broadcast_address'))
+        self.assertFalse(self.ipv4_network._cache.has_key('hostmask'))
 
         # V4 - populate and test
-        self.assertEqual(self.ipv4.network_address, ipaddress.IPv4Address('1.2.3.0'))
-        self.assertEqual(self.ipv4.broadcast_address, ipaddress.IPv4Address('1.2.3.255'))
-        self.assertEqual(self.ipv4.hostmask, ipaddress.IPv4Address('0.0.0.255'))
+        self.assertEqual(self.ipv4_network.network_address,
+                         ipaddress.IPv4Address('1.2.3.0'))
+        self.assertEqual(self.ipv4_network.broadcast_address,
+                         ipaddress.IPv4Address('1.2.3.255'))
+        self.assertEqual(self.ipv4_network.hostmask,
+                         ipaddress.IPv4Address('0.0.0.255'))
 
         # V4 - check we're cached
-        self.assertTrue(self.ipv4._cache.has_key('network_address'))
-        self.assertTrue(self.ipv4._cache.has_key('broadcast_address'))
-        self.assertTrue(self.ipv4._cache.has_key('hostmask'))
+        self.assertTrue(self.ipv4_network._cache.has_key('broadcast_address'))
+        self.assertTrue(self.ipv4_network._cache.has_key('hostmask'))
 
         # V6 - make sure we're empty
-        self.assertFalse(self.ipv6._cache.has_key('network_address'))
-        self.assertFalse(self.ipv6._cache.has_key('broadcast_address'))
-        self.assertFalse(self.ipv6._cache.has_key('hostmask'))
+        self.assertFalse(self.ipv6_network._cache.has_key('broadcast_address'))
+        self.assertFalse(self.ipv6_network._cache.has_key('hostmask'))
 
         # V6 - populate and test
-        self.assertEqual(self.ipv6.network_address,
+        self.assertEqual(self.ipv6_network.network_address,
                          ipaddress.IPv6Address('2001:658:22a:cafe::'))
-        self.assertEqual(self.ipv6.broadcast_address, ipaddress.IPv6Address(
-            '2001:658:22a:cafe:ffff:ffff:ffff:ffff'))
-        self.assertEqual(self.ipv6.hostmask,
+        self.assertEqual(self.ipv6_interface.network.network_address,
+                         ipaddress.IPv6Address('2001:658:22a:cafe::'))
+
+        self.assertEqual(
+            self.ipv6_network.broadcast_address,
+            ipaddress.IPv6Address('2001:658:22a:cafe:ffff:ffff:ffff:ffff'))
+        self.assertEqual(self.ipv6_network.hostmask,
+                         ipaddress.IPv6Address('::ffff:ffff:ffff:ffff'))
+        self.assertEqual(
+            self.ipv6_interface.network.broadcast_address,
+            ipaddress.IPv6Address('2001:658:22a:cafe:ffff:ffff:ffff:ffff'))
+        self.assertEqual(self.ipv6_interface.network.hostmask,
                          ipaddress.IPv6Address('::ffff:ffff:ffff:ffff'))
 
         # V6 - check we're cached
-        self.assertTrue(self.ipv6._cache.has_key('network_address'))
-        self.assertTrue(self.ipv6._cache.has_key('broadcast_address'))
-        self.assertTrue(self.ipv6._cache.has_key('hostmask'))
+        self.assertTrue(self.ipv6_network._cache.has_key('broadcast_address'))
+        self.assertTrue(self.ipv6_network._cache.has_key('hostmask'))
+        self.assertTrue(self.ipv6_interface.network._cache.has_key(
+                'broadcast_address'))
+        self.assertTrue(self.ipv6_interface.network._cache.has_key('hostmask'))
 
     def testTeredo(self):
         # stolen from wikipedia
