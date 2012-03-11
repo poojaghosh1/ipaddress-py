@@ -340,7 +340,8 @@ def _collapse_address_list_recursive(addresses):
         if not ret_array:
             ret_array.append(cur_addr)
             continue
-        if cur_addr in ret_array[-1]:
+        if (cur_addr.network_address >= ret_array[-1].network_address and
+            cur_addr.broadcast_address <= ret_array[-1].broadcast_address):
             optimized = True
         elif cur_addr == ret_array[-1].supernet().subnet()[1]:
             ret_array.append(ret_array.pop().supernet())
@@ -627,9 +628,6 @@ class _BaseNetwork(_IPAddressBase):
     def __int__(self):
         return int(self.network_address)
 
-#    def __hex__(self):
-#        return hex(self._ip)
-
     def __repr__(self):
         return '%s(%r)' % (self.__class__.__name__, str(self))
 
@@ -731,10 +729,10 @@ class _BaseNetwork(_IPAddressBase):
           return False
         # dealing with another network.
         if isinstance(other, _BaseNetwork):
-            return (self.network_address <= other.network_address and
-                    self.broadcast_address >= other.broadcast_address)
+            return False
         # dealing with another address
         else:
+            # address
             return (int(self.network_address) <= int(other._ip) <=
                     int(self.broadcast_address))
 
@@ -834,9 +832,10 @@ class _BaseNetwork(_IPAddressBase):
         if not isinstance(other, _BaseNetwork):
             raise TypeError("%s is not a network object" % str(other))
 
-        if other not in self:
-            raise ValueError('%s not contained in %s' % (str(other),
-                                                         str(self)))
+        if not (other.network_address >= self.network_address and
+                other.broadcast_address <= self.broadcast_address):
+            raise ValueError('%s not contained in %s' % (str(other), str(self)))
+
         if other == self:
             return []
 
@@ -849,10 +848,12 @@ class _BaseNetwork(_IPAddressBase):
 
         s1, s2 = self.subnet()
         while s1 != other and s2 != other:
-            if other in s1:
+            if (other.network_address >= s1.network_address and
+                other.broadcast_address <= s1.broadcast_address):
                 ret_addrs.append(s2)
                 s1, s2 = s1.subnet()
-            elif other in s2:
+            elif (other.network_address >= s2.network_address and
+                  other.broadcast_address <= s2.broadcast_address):
                 ret_addrs.append(s1)
                 s1, s2 = s2.subnet()
             else:
@@ -1158,7 +1159,11 @@ class _BaseV4(object):
             reserved IPv4 Network range.
 
        """
-       return self in IPv4Network('240.0.0.0/4')
+       reserved_network = IPv4Network('240.0.0.0/4')
+       if isinstance(self, _BaseAddress):
+           return self in reserved_network
+       return (self.network_address in reserved_network and
+               self.broadcast_address in reserved_network)
 
     @property
     def is_private(self):
@@ -1168,9 +1173,19 @@ class _BaseV4(object):
             A boolean, True if the address is reserved per RFC 1918.
 
         """
-        return (self in IPv4Network('10.0.0.0/8') or
-                self in IPv4Network('172.16.0.0/12') or
-                self in IPv4Network('192.168.0.0/16'))
+        private_10 = IPv4Network('10.0.0.0/8')
+        private_172 = IPv4Network('172.16.0.0/12')
+        private_192 = IPv4Network('192.168.0.0/16')
+        if isinstance(self, _BaseAddress):
+            return (self in private_10 or self in private_172 or
+                    self in private_192)
+        else:
+            return ((self.network_address in private_10 and
+                     self.broadcast_address in private_10) or
+                    (self.network_address in private_172 and
+                     self.broadcast_address in private_172) or
+                    (self.network_address in private_192 and
+                     self.broadcast_address in private_192))
 
     @property
     def is_multicast(self):
@@ -1181,7 +1196,11 @@ class _BaseV4(object):
             See RFC 3171 for details.
 
         """
-        return self in IPv4Network('224.0.0.0/4')
+        multicast_network = IPv4Network('224.0.0.0/4')
+        if isinstance(self, _BaseAddress):
+            return self in IPv4Network('224.0.0.0/4')
+        return (self.network_address in multicast_network and
+                self.broadcast_address in multicast_network)
 
     @property
     def is_unspecified(self):
@@ -1192,7 +1211,11 @@ class _BaseV4(object):
             RFC 5735 3.
 
         """
-        return self in IPv4Network('0.0.0.0')
+        unspecified_address = IPv4Address('0.0.0.0')
+        if isinstance(self, _BaseAddress):
+            return self in unspecified_address
+        return (self.network_address == self.broadcast_address ==
+                unspecified_address)
 
     @property
     def is_loopback(self):
@@ -1202,7 +1225,12 @@ class _BaseV4(object):
             A boolean, True if the address is a loopback per RFC 3330.
 
         """
-        return self in IPv4Network('127.0.0.0/8')
+        loopback_address = IPv4Network('127.0.0.0/8')
+        if isinstance(self, _BaseAddress):
+            return self in loopback_address
+
+        return (self.network_address in loopback_address and
+                self.broadcast_address in loopback_address)
 
     @property
     def is_link_local(self):
@@ -1212,7 +1240,11 @@ class _BaseV4(object):
             A boolean, True if the address is link-local per RFC 3927.
 
         """
-        return self in IPv4Network('169.254.0.0/16')
+        linklocal_network = IPv4Network('169.254.0.0/16')
+        if isinstance(self, _BaseAddress):
+            return self in linklocal_network
+        return (self.network_address in linklocal_network and
+                self.broadcast_address in linklocal_network)
 
 
 class IPv4Address(_BaseV4, _BaseAddress):
@@ -1809,7 +1841,11 @@ class _BaseV6(object):
             See RFC 2373 2.7 for details.
 
         """
-        return self in IPv6Network('ff00::/8')
+        multicast_network = IPv6Network('ff00::/8')
+        if isinstance(self, _BaseAddress):
+            return self in multicast_network
+        return (self.network_address in multicast_network and
+                self.broadcast_address in multicast_network)
 
     @property
     def is_reserved(self):
@@ -1820,21 +1856,19 @@ class _BaseV6(object):
             reserved IPv6 Network ranges.
 
         """
-        return (self in IPv6Network('::/8') or
-                self in IPv6Network('100::/8') or
-                self in IPv6Network('200::/7') or
-                self in IPv6Network('400::/6') or
-                self in IPv6Network('800::/5') or
-                self in IPv6Network('1000::/4') or
-                self in IPv6Network('4000::/3') or
-                self in IPv6Network('6000::/3') or
-                self in IPv6Network('8000::/3') or
-                self in IPv6Network('A000::/3') or
-                self in IPv6Network('C000::/3') or
-                self in IPv6Network('E000::/4') or
-                self in IPv6Network('F000::/5') or
-                self in IPv6Network('F800::/6') or
-                self in IPv6Network('FE00::/9'))
+        reserved_networks = [IPv6Network('::/8'), IPv6Network('100::/8'),
+                             IPv6Network('200::/7'), IPv6Network('400::/6'),
+                             IPv6Network('800::/5'), IPv6Network('1000::/4'),
+                             IPv6Network('4000::/3'), IPv6Network('6000::/3'),
+                             IPv6Network('8000::/3'), IPv6Network('A000::/3'),
+                             IPv6Network('C000::/3'), IPv6Network('E000::/4'),
+                             IPv6Network('F000::/5'), IPv6Network('F800::/6'),
+                             IPv6Network('FE00::/9')]
+
+        if isinstance(self, _BaseAddress):
+            return len(filter(lambda x: self in x, reserved_networks)) > 0
+        return len(filter(lambda x: self.network_address in x and
+                          self.broadcast_address in x, reserved_networks)) > 0
 
     @property
     def is_link_local(self):
@@ -1844,7 +1878,11 @@ class _BaseV6(object):
             A boolean, True if the address is reserved per RFC 4291.
 
         """
-        return self in IPv6Network('fe80::/10')
+        linklocal_network = IPv6Network('fe80::/10')
+        if isinstance(self, _BaseAddress):
+            return self in linklocal_network
+        return (self.network_address in linklocal_network and
+                self.broadcast_address in linklocal_network)
 
     @property
     def is_site_local(self):
@@ -1858,7 +1896,11 @@ class _BaseV6(object):
             A boolean, True if the address is reserved per RFC 3513 2.5.6.
 
         """
-        return self in IPv6Network('fec0::/10')
+        sitelocal_network = IPv6Network('fec0::/10')
+        if isinstance(self, _BaseAddress):
+            return self in sitelocal_network
+        return (self.network_address in sitelocal_network and
+                self.broadcast_address in sitelocal_network)
 
     @property
     def is_private(self):
@@ -1868,7 +1910,12 @@ class _BaseV6(object):
             A boolean, True if the address is reserved per RFC 4193.
 
         """
-        return self in IPv6Network('fc00::/7')
+        private_network = IPv6Network('fc00::/7')
+        if isinstance(self, _BaseAddress):
+            return self in private_network
+        return (self.network_address in private_network and
+                self.broadcast_address in private_network)
+
 
     @property
     def ipv4_mapped(self):

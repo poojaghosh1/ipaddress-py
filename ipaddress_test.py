@@ -430,8 +430,6 @@ class IpaddrUnitTest(unittest.TestCase):
                         self.ipv4_network)
         self.assertFalse(ipaddress.IPv4Interface('1.2.4.1/24') in
                          self.ipv4_network)
-        self.assertTrue(self.ipv4_network in self.ipv4_network)
-        self.assertTrue(self.ipv6_network in self.ipv6_network)
         # We can test addresses and string as well.
         addr1 = ipaddress.IPv4Address('1.2.3.37')
         self.assertTrue(addr1 in self.ipv4_network)
