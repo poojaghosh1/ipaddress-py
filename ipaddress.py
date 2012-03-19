@@ -47,8 +47,8 @@ def ip_address(address, version=None):
           be considered to be IPv4 by default.
         version: An Integer, 4 or 6. If set, don't try to automatically
           determine what the IP address type is. important for things
-          like ip_address(1), which could be IPv4, '0.0.0.1',  or IPv6,
-          '::1'.
+          like ip_address(1), which could be IPv4, '192.0.2.1',  or IPv6,
+          '2001:db8::1'.
 
     Returns:
         An IPv4Address or IPv6Address object.
@@ -87,8 +87,8 @@ def ip_network(address, version=None, strict=True):
           be considered to be IPv4 by default.
         version: An Integer, if set, don't try to automatically
           determine what the IP address type is. important for things
-          like ip_network(1), which could be IPv4, '0.0.0.1/32', or IPv6,
-          '::1/128'.
+          like ip_network(1), which could be IPv4, '192.0.2.1/32', or IPv6,
+          '2001:db8::1/128'.
 
     Returns:
         An IPv4Network or IPv6Network object.
@@ -127,8 +127,8 @@ def ip_interface(address, version=None):
           be considered to be IPv4 by default.
         version: An Integer, if set, don't try to automatically
           determine what the IP address type is. important for things
-          like ip_network(1), which could be IPv4, '0.0.0.1/32', or IPv6,
-          '::1/128'.
+          like ip_network(1), which could be IPv4, '192.0.2.1/32', or IPv6,
+          '2001:db8::1/128'.
 
     Returns:
         An IPv4Network or IPv6Network object.
@@ -248,10 +248,10 @@ def summarize_address_range(first, last):
     """Summarize a network range given the first and last IP addresses.
 
     Example:
-        >>> summarize_address_range(IPv4Address('1.1.1.0'),
-            IPv4Address('1.1.1.130'))
-        [IPv4Network('1.1.1.0/25'), IPv4Network('1.1.1.128/31'),
-        IPv4Network('1.1.1.130/32')]
+        >>> summarize_address_range(IPv4Address('192.0.2.0'),
+            IPv4Address('192.0.2.130'))
+        [IPv4Network('192.0.2.0/25'), IPv4Network('192.0.2.128/31'),
+        IPv4Network('192.0.2.130/32')]
 
     Args:
         first: the first IPv4Address or IPv6Address in the range.
@@ -313,14 +313,13 @@ def _collapse_address_list_recursive(addresses):
 
     Example:
 
-        ip1 = IPv4Network('1.1.0.0/24')
-        ip2 = IPv4Network('1.1.1.0/24')
-        ip3 = IPv4Network('1.1.2.0/24')
-        ip4 = IPv4Network('1.1.3.0/24')
-        ip5 = IPv4Network('1.1.4.0/24')
+        ip1 = IPv4Network('192.0.2.0/26')
+        ip2 = IPv4Network('192.0.2.64/26')
+        ip3 = IPv4Network('192.0.2.128/26')
+        ip4 = IPv4Network('192.0.2.192/26')
 
-        _collapse_address_list_recursive([ip1, ip2, ip3, ip4, ip5, ip6]) ->
-          [IPv4Network('1.1.0.0/22'), IPv4Network('1.1.4.0/24')]
+        _collapse_address_list_recursive([ip1, ip2, ip3, ip4]) ->
+          [IPv4Network('192.0.2.0/24')]
 
         This shouldn't be called directly; it is called via
           collapse_address_list([]).
@@ -359,9 +358,9 @@ def collapse_address_list(addresses):
     """Collapse a list of IP objects.
 
     Example:
-        collapse_address_list([IPv4Network('1.1.0.0/24'),
-                               IPv4Network('1.1.1.0/24')]) ->
-                              [IPv4Network('1.1.0.0/23')]
+        collapse_address_list([IPv4Network('192.0.2.0/25'),
+                               IPv4Network('192.0.2.128/25')]) ->
+                              [IPv4Network('192.0.2.0/24')]
 
     Args:
         addresses: A list of IPv4Network or IPv6Network objects.
@@ -431,7 +430,7 @@ def get_mixed_type_key(obj):
     Address and Network objects are not sortable by default; they're
     fundamentally different so the expression
 
-        IPv4Address('1.1.1.1') <= IPv4Network('1.1.1.1/24')
+        IPv4Address('192.0.2.0') <= IPv4Network('192.0.2.0/24')
 
     doesn't make any sense.  There are some times however, where you may wish
     to have ipaddress sort these for you anyway. If you need to do this, you
@@ -796,24 +795,26 @@ class _BaseNetwork(_IPAddressBase):
 
         For example:
 
-            addr1 = ip_network('10.1.1.0/24')
-            addr2 = ip_network('10.1.1.0/26')
+            addr1 = ip_network('192.0.2.0/28')
+            addr2 = ip_network('192.0.2.1/32')
             addr1.address_exclude(addr2) =
-                [ip_network('10.1.1.64/26'), ip_network('10.1.1.128/25')]
+                [IPv4Network('192.0.2.0/32'), IPv4Network('192.0.2.2/31'),
+                IPv4Network('192.0.2.4/30'), IPv4Network('192.0.2.8/29')]
 
         or IPv6:
 
-            addr1 = ip_network('::1/32')
-            addr2 = ip_network('::1/128')
-            addr1.address_exclude(addr2) = [ip_network('::0/128'),
-                ip_network('::2/127'),
-                ip_network('::4/126'),
-                ip_network('::8/125'),
+            addr1 = ip_network('2001:db8::1/32')
+            addr2 = ip_network('2001:db8::1/128')
+            addr1.address_exclude(addr2) =
+                [ip_network('2001:db8::1/128'),
+                ip_network('2001:db8::2/127'),
+                ip_network('2001:db8::4/126'),
+                ip_network('2001:db8::8/125'),
                 ...
-                ip_network('0:0:8000::/33')]
+                ip_network('2001:db8:8000::/33')]
 
         Args:
-            other: An IPvXNetwork object of the same type.
+            other: An IPv4Network or IPv6Network object of the same type.
 
         Returns:
             A sorted list of IPvXNetwork objects addresses which is self
@@ -889,29 +890,26 @@ class _BaseNetwork(_IPAddressBase):
             If the IP versions of self and other are the same, returns:
 
             -1 if self < other:
-              eg: IPv4('1.1.1.0/24') < IPv4('1.1.2.0/24')
-              IPv6('1080::200C:417A') < IPv6('1080::200B:417B')
+              eg: IPv4Network('192.0.2.0/25') < IPv4Network('192.0.2.128/25')
+              IPv6Network('2001:db8::1000/124') <
+                  IPv6Network('2001:db8::2000/124')
             0 if self == other
-              eg: IPv4('1.1.1.1/24') == IPv4('1.1.1.2/24')
-              IPv6('1080::200C:417A/96') == IPv6('1080::200C:417B/96')
+              eg: IPv4Network('192.0.2.0/24') == IPv4Network('192.0.2.0/24')
+              IPv6Network('2001:db8::1000/124') ==
+                  IPv6Network('2001:db8::1000/124')
             1 if self > other
-              eg: IPv4('1.1.1.0/24') > IPv4('1.1.0.0/24')
-              IPv6('1080::1:200C:417A/112') >
-              IPv6('1080::0:200C:417A/112')
+              eg: IPv4Network('192.0.2.128/25') > IPv4Network('192.0.2.0/25')
+                  IPv6Network('2001:db8::2000/124') >
+                      IPv6Network('2001:db8::1000/124')
 
-            If the IP versions of self and other are different, returns:
-
-            -1 if self._version < other._version
-              eg: IPv4('10.0.0.1/24') < IPv6('::1/128')
-            1 if self._version > other._version
-              eg: IPv6('::1/128') > IPv4('255.255.255.0/24')
+          Raises:
+              TypeError if the IP versions are different.
 
         """
         # does this need to raise a ValueError?
-        if self._version < other._version:
-            return -1
-        if self._version > other._version:
-            return 1
+        if self._version != other._version:
+            raise TypeError('%s and %s are not of the same type' % (
+                    str(self), str(other)))
         # self._version == other._version below here:
         if self.network_address < other.network_address:
             return -1
@@ -1256,13 +1254,12 @@ class IPv4Address(_BaseV4, _BaseAddress):
         """
         Args:
             address: A string or integer representing the IP
-              '192.168.1.1'
 
               Additionally, an integer can be passed, so
-              IPv4Address('192.168.1.1') == IPv4Address(3232235777).
+              IPv4Address('192.0.2.1') == IPv4Address(3221225985).
               or, more generally
-              IPv4Address(int(IPv4Address('192.168.1.1'))) ==
-                IPv4Address('192.168.1.1')
+              IPv4Address(int(IPv4Address('192.0.2.1'))) ==
+                IPv4Address('192.0.2.1')
 
         Raises:
             AddressValueError: If ipaddressisn't a valid IPv4 address.
@@ -1404,12 +1401,10 @@ class IPv4Network(_BaseV4, _BaseNetwork):
     """This class represents and manipulates 32-bit IPv4 network + addresses..
 
     FIXME:
-    Attributes: [examples for IPv4Interface('1.2.3.4/27')]
-        ._ip: 16909060
-        .ip: IPv4Address('1.2.3.4')
-        .network_address: IPv4Address('1.2.3.0')
+    Attributes: [examples for IPv4Network('192.0.2.0/27')]
+        .network_address: IPv4Address('192.0.2.0')
         .hostmask: IPv4Address('0.0.0.31')
-        .broadcast_address: IPv4Address('1.2.3.31')
+        .broadcast_address: IPv4Address('192.0.2.32')
         .netmask: IPv4Address('255.255.255.224')
         .prefixlen: 27
 
@@ -1424,13 +1419,13 @@ class IPv4Network(_BaseV4, _BaseNetwork):
 
         Args:
             address: A string or integer representing the IP [& network].
-              '192.168.1.1/24'
-              '192.168.1.1/255.255.255.0'
-              '192.168.1.1/0.0.0.255'
+              '192.0.2.0/24'
+              '192.0.2.0/255.255.255.0'
+              '192.0.0.2/0.0.0.255'
               are all functionally the same in IPv4. Similarly,
-              '192.168.1.1'
-              '192.168.1.1/255.255.255.255'
-              '192.168.1.1/32'
+              '192.0.2.1'
+              '192.0.2.1/255.255.255.255'
+              '192.0.2.1/32'
               are also functionaly equivalent. That is to say, failing to
               provide a subnetmask will create an object with a mask of /32.
 
@@ -1442,10 +1437,10 @@ class IPv4Network(_BaseV4, _BaseNetwork):
               netmask == /0. If no mask is given, a default of /32 is used.
 
               Additionally, an integer can be passed, so
-              IPv4Interface('192.168.1.1') == IPv4Interface(3232235777).
+              IPv4Network('192.0.2.1') == IPv4Network(3221225985)
               or, more generally
-              IPv4Interface(int(IPv4Interface('192.168.1.1'))) ==
-                IPv4Interface('192.168.1.1')
+              IPv4Interface(int(IPv4Interface('192.0.2.1'))) ==
+                IPv4Interface('192.0.2.1')
 
         Raises:
             AddressValueError: If ipaddressisn't a valid IPv4 address.
@@ -1461,7 +1456,6 @@ class IPv4Network(_BaseV4, _BaseNetwork):
 
         # Constructing from a packed address
         if _compat_has_real_bytes:
-            print 'compat'
             if isinstance(address, bytes) and len(address) == 4:
                 self.network_address = IPv4Address(
                     struct.unpack('!I', address)[0])
@@ -2002,11 +1996,11 @@ class IPv6Address(_BaseV6, _BaseAddress):
             address: A string or integer representing the IP
 
               Additionally, an integer can be passed, so
-              IPv6Address('2001:4860::') ==
-                IPv6Address(42541956101370907050197289607612071936L).
+              IPv6Address('2001:db8::') ==
+                IPv6Address(42540766411282592856903984951653826560)
               or, more generally
-              IPv6Address(IPv6Address('2001:4860::')._ip) ==
-                IPv6Address('2001:4860::')
+              IPv6Address(int(IPv6Address('2001:db8::'))) ==
+                IPv6Address('2001:db8::')
 
         Raises:
             AddressValueError: If address isn't a valid IPv6 address.
@@ -2090,13 +2084,12 @@ class IPv6Network(_BaseV6, _BaseNetwork):
 
     """This class represents and manipulates 128-bit IPv6 networks.
 
-    Attributes: [examples for IPv6('2001:658:22A:CAFE:200::1/64')]
-        .ip: IPv6Address('2001:658:22a:cafe:200::1')
-        .network_address: IPv6Address('2001:658:22a:cafe::')
-        .hostmask: IPv6Address('::ffff:ffff:ffff:ffff')
-        .broadcast_address: IPv6Address('2001:658:22a:cafe:ffff:ffff:ffff:ffff')
-        .netmask: IPv6Address('ffff:ffff:ffff:ffff::')
-        .prefixlen: 64
+    Attributes: [examples for IPv6('2001:db8::1000/124')]
+        .network_address: IPv6Address('2001:db8::1000')
+        .hostmask: IPv6Address('::f')
+        .broadcast_address: IPv6Address('2001:db8::100f')
+        .netmask: IPv6Address('ffff:ffff:ffff:ffff:ffff:ffff:ffff:fff0')
+        .prefixlen: 124
 
     """
 
@@ -2106,23 +2099,23 @@ class IPv6Network(_BaseV6, _BaseNetwork):
         Args:
             address: A string or integer representing the IPv6 network or the IP
               and prefix/netmask.
-              '2001:4860::/128'
-              '2001:4860:0000:0000:0000:0000:0000:0000/128'
-              '2001:4860::'
+              '2001:db8::/128'
+              '2001:db8:0000:0000:0000:0000:0000:0000/128'
+              '2001:db8::'
               are all functionally the same in IPv6.  That is to say,
               failing to provide a subnetmask will create an object with
               a mask of /128.
 
               Additionally, an integer can be passed, so
-              IPv6Network('2001:4860::') ==
-                IPv6Network(42541956101370907050197289607612071936L).
+              IPv6Network('2001:db8::') ==
+                IPv6Network(42540766411282592856903984951653826560)
               or, more generally
-              IPv6Network(IPv6Network('2001:4860::')._ip) ==
-                IPv6Network('2001:4860::')
+              IPv6Network(int(IPv6Network('2001:db8::'))) ==
+                IPv6Network('2001:db8::')
 
             strict: A boolean. If true, ensure that we have been passed
-              A true network address, eg, 192.168.1.0/24 and not an
-              IP address on a network, eg, 192.168.1.1/24.
+              A true network address, eg, 2001:db8::1000/124 and not an
+              IP address on a network, eg, 2001:db8::1/124.
 
         Raises:
             AddressValueError: If address isn't a valid IPv6 address.
