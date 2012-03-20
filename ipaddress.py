@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Copyright 2007 Google Inc.
 #  Licensed to PSF under a Contributor Agreement.
@@ -47,8 +47,8 @@ def ip_address(address, version=None):
           be considered to be IPv4 by default.
         version: An Integer, 4 or 6. If set, don't try to automatically
           determine what the IP address type is. important for things
-          like ip_address(1), which could be IPv4, '0.0.0.1',  or IPv6,
-          '::1'.
+          like ip_address(1), which could be IPv4, '192.0.2.1',  or IPv6,
+          '2001:db8::1'.
 
     Returns:
         An IPv4Address or IPv6Address object.
@@ -87,8 +87,8 @@ def ip_network(address, version=None, strict=True):
           be considered to be IPv4 by default.
         version: An Integer, if set, don't try to automatically
           determine what the IP address type is. important for things
-          like ip_network(1), which could be IPv4, '0.0.0.1/32', or IPv6,
-          '::1/128'.
+          like ip_network(1), which could be IPv4, '192.0.2.1/32', or IPv6,
+          '2001:db8::1/128'.
 
     Returns:
         An IPv4Network or IPv6Network object.
@@ -127,8 +127,8 @@ def ip_interface(address, version=None):
           be considered to be IPv4 by default.
         version: An Integer, if set, don't try to automatically
           determine what the IP address type is. important for things
-          like ip_network(1), which could be IPv4, '0.0.0.1/32', or IPv6,
-          '::1/128'.
+          like ip_network(1), which could be IPv4, '192.0.2.1/32', or IPv6,
+          '2001:db8::1/128'.
 
     Returns:
         An IPv4Network or IPv6Network object.
@@ -248,10 +248,10 @@ def summarize_address_range(first, last):
     """Summarize a network range given the first and last IP addresses.
 
     Example:
-        >>> summarize_address_range(IPv4Address('1.1.1.0'),
-            IPv4Address('1.1.1.130'))
-        [IPv4Network('1.1.1.0/25'), IPv4Network('1.1.1.128/31'),
-        IPv4Network('1.1.1.130/32')]
+        >>> summarize_address_range(IPv4Address('192.0.2.0'),
+            IPv4Address('192.0.2.130'))
+        [IPv4Network('192.0.2.0/25'), IPv4Network('192.0.2.128/31'),
+        IPv4Network('192.0.2.130/32')]
 
     Args:
         first: the first IPv4Address or IPv6Address in the range.
@@ -313,14 +313,13 @@ def _collapse_address_list_recursive(addresses):
 
     Example:
 
-        ip1 = IPv4Network('1.1.0.0/24')
-        ip2 = IPv4Network('1.1.1.0/24')
-        ip3 = IPv4Network('1.1.2.0/24')
-        ip4 = IPv4Network('1.1.3.0/24')
-        ip5 = IPv4Network('1.1.4.0/24')
+        ip1 = IPv4Network('192.0.2.0/26')
+        ip2 = IPv4Network('192.0.2.64/26')
+        ip3 = IPv4Network('192.0.2.128/26')
+        ip4 = IPv4Network('192.0.2.192/26')
 
-        _collapse_address_list_recursive([ip1, ip2, ip3, ip4, ip5, ip6]) ->
-          [IPv4Network('1.1.0.0/22'), IPv4Network('1.1.4.0/24')]
+        _collapse_address_list_recursive([ip1, ip2, ip3, ip4]) ->
+          [IPv4Network('192.0.2.0/24')]
 
         This shouldn't be called directly; it is called via
           collapse_address_list([]).
@@ -359,9 +358,9 @@ def collapse_address_list(addresses):
     """Collapse a list of IP objects.
 
     Example:
-        collapse_address_list([IPv4Network('1.1.0.0/24'),
-                               IPv4Network('1.1.1.0/24')]) ->
-                              [IPv4Network('1.1.0.0/23')]
+        collapse_address_list([IPv4Network('192.0.2.0/25'),
+                               IPv4Network('192.0.2.128/25')]) ->
+                              [IPv4Network('192.0.2.0/24')]
 
     Args:
         addresses: A list of IPv4Network or IPv6Network objects.
@@ -431,7 +430,7 @@ def get_mixed_type_key(obj):
     Address and Network objects are not sortable by default; they're
     fundamentally different so the expression
 
-        IPv4Address('1.1.1.1') <= IPv4Network('1.1.1.1/24')
+        IPv4Address('192.0.2.0') <= IPv4Network('192.0.2.0/24')
 
     doesn't make any sense.  There are some times however, where you may wish
     to have ipaddress sort these for you anyway. If you need to do this, you
@@ -600,7 +599,7 @@ class _BaseAddress(_IPAddressBase):
         return  '%s' % self._string_from_ip_int(self._ip)
 
     def __hash__(self):
-        return hash(hex(long(self._ip)))
+        return hash(hex(int(self._ip)))
 
     def _get_address_key(self):
         return (self._version, self)
@@ -796,24 +795,26 @@ class _BaseNetwork(_IPAddressBase):
 
         For example:
 
-            addr1 = ip_network('10.1.1.0/24')
-            addr2 = ip_network('10.1.1.0/26')
+            addr1 = ip_network('192.0.2.0/28')
+            addr2 = ip_network('192.0.2.1/32')
             addr1.address_exclude(addr2) =
-                [ip_network('10.1.1.64/26'), ip_network('10.1.1.128/25')]
+                [IPv4Network('192.0.2.0/32'), IPv4Network('192.0.2.2/31'),
+                IPv4Network('192.0.2.4/30'), IPv4Network('192.0.2.8/29')]
 
         or IPv6:
 
-            addr1 = ip_network('::1/32')
-            addr2 = ip_network('::1/128')
-            addr1.address_exclude(addr2) = [ip_network('::0/128'),
-                ip_network('::2/127'),
-                ip_network('::4/126'),
-                ip_network('::8/125'),
+            addr1 = ip_network('2001:db8::1/32')
+            addr2 = ip_network('2001:db8::1/128')
+            addr1.address_exclude(addr2) =
+                [ip_network('2001:db8::1/128'),
+                ip_network('2001:db8::2/127'),
+                ip_network('2001:db8::4/126'),
+                ip_network('2001:db8::8/125'),
                 ...
-                ip_network('0:0:8000::/33')]
+                ip_network('2001:db8:8000::/33')]
 
         Args:
-            other: An IPvXNetwork object of the same type.
+            other: An IPv4Network or IPv6Network object of the same type.
 
         Returns:
             A sorted list of IPvXNetwork objects addresses which is self
@@ -889,29 +890,26 @@ class _BaseNetwork(_IPAddressBase):
             If the IP versions of self and other are the same, returns:
 
             -1 if self < other:
-              eg: IPv4('1.1.1.0/24') < IPv4('1.1.2.0/24')
-              IPv6('1080::200C:417A') < IPv6('1080::200B:417B')
+              eg: IPv4Network('192.0.2.0/25') < IPv4Network('192.0.2.128/25')
+              IPv6Network('2001:db8::1000/124') <
+                  IPv6Network('2001:db8::2000/124')
             0 if self == other
-              eg: IPv4('1.1.1.1/24') == IPv4('1.1.1.2/24')
-              IPv6('1080::200C:417A/96') == IPv6('1080::200C:417B/96')
+              eg: IPv4Network('192.0.2.0/24') == IPv4Network('192.0.2.0/24')
+              IPv6Network('2001:db8::1000/124') ==
+                  IPv6Network('2001:db8::1000/124')
             1 if self > other
-              eg: IPv4('1.1.1.0/24') > IPv4('1.1.0.0/24')
-              IPv6('1080::1:200C:417A/112') >
-              IPv6('1080::0:200C:417A/112')
+              eg: IPv4Network('192.0.2.128/25') > IPv4Network('192.0.2.0/25')
+                  IPv6Network('2001:db8::2000/124') >
+                      IPv6Network('2001:db8::1000/124')
 
-            If the IP versions of self and other are different, returns:
-
-            -1 if self._version < other._version
-              eg: IPv4('10.0.0.1/24') < IPv6('::1/128')
-            1 if self._version > other._version
-              eg: IPv6('::1/128') > IPv4('255.255.255.0/24')
+          Raises:
+              TypeError if the IP versions are different.
 
         """
         # does this need to raise a ValueError?
-        if self._version < other._version:
-            return -1
-        if self._version > other._version:
-            return 1
+        if self._version != other._version:
+            raise TypeError('%s and %s are not of the same type' % (
+                    str(self), str(other)))
         # self._version == other._version below here:
         if self.network_address < other.network_address:
             return -1
@@ -1137,7 +1135,7 @@ class _BaseV4(object):
 
         """
         octets = []
-        for _ in xrange(4):
+        for _ in range(4):
             octets.insert(0, str(ip_int & 0xFF))
             ip_int >>= 8
         return '.'.join(octets)
@@ -1256,13 +1254,12 @@ class IPv4Address(_BaseV4, _BaseAddress):
         """
         Args:
             address: A string or integer representing the IP
-              '192.168.1.1'
 
               Additionally, an integer can be passed, so
-              IPv4Address('192.168.1.1') == IPv4Address(3232235777).
+              IPv4Address('192.0.2.1') == IPv4Address(3221225985).
               or, more generally
-              IPv4Address(int(IPv4Address('192.168.1.1'))) ==
-                IPv4Address('192.168.1.1')
+              IPv4Address(int(IPv4Address('192.0.2.1'))) ==
+                IPv4Address('192.0.2.1')
 
         Raises:
             AddressValueError: If ipaddressisn't a valid IPv4 address.
@@ -1272,7 +1269,7 @@ class IPv4Address(_BaseV4, _BaseAddress):
         _BaseV4.__init__(self, address)
 
         # Efficient constructor from integer.
-        if isinstance(address, (int, long)):
+        if isinstance(address, int):
             self._ip = address
             if address < 0 or address > self._ALL_ONES:
                 raise AddressValueError(address)
@@ -1301,7 +1298,7 @@ class IPv4Interface(IPv4Address):
     _valid_mask_octets = set((255, 254, 252, 248, 240, 224, 192, 128, 0))
 
     def __init__(self, address):
-        if isinstance(address, (int, long)):
+        if isinstance(address, (bytes, int)):
             IPv4Address.__init__(self, address)
             self.network = IPv4Network(self._ip)
             self._prefixlen = self._max_prefixlen
@@ -1329,6 +1326,9 @@ class IPv4Interface(IPv4Address):
                     self.network == other.network)
         except AttributeError:
             return NotImplemented
+
+    def __hash__(self):
+        return self._ip ^ self._prefixlen ^ int(self.network.network_address)
 
     def _is_valid_netmask(self, netmask):
         """Verify that the netmask is valid.
@@ -1404,12 +1404,10 @@ class IPv4Network(_BaseV4, _BaseNetwork):
     """This class represents and manipulates 32-bit IPv4 network + addresses..
 
     FIXME:
-    Attributes: [examples for IPv4Interface('1.2.3.4/27')]
-        ._ip: 16909060
-        .ip: IPv4Address('1.2.3.4')
-        .network_address: IPv4Address('1.2.3.0')
+    Attributes: [examples for IPv4Network('192.0.2.0/27')]
+        .network_address: IPv4Address('192.0.2.0')
         .hostmask: IPv4Address('0.0.0.31')
-        .broadcast_address: IPv4Address('1.2.3.31')
+        .broadcast_address: IPv4Address('192.0.2.32')
         .netmask: IPv4Address('255.255.255.224')
         .prefixlen: 27
 
@@ -1424,13 +1422,13 @@ class IPv4Network(_BaseV4, _BaseNetwork):
 
         Args:
             address: A string or integer representing the IP [& network].
-              '192.168.1.1/24'
-              '192.168.1.1/255.255.255.0'
-              '192.168.1.1/0.0.0.255'
+              '192.0.2.0/24'
+              '192.0.2.0/255.255.255.0'
+              '192.0.0.2/0.0.0.255'
               are all functionally the same in IPv4. Similarly,
-              '192.168.1.1'
-              '192.168.1.1/255.255.255.255'
-              '192.168.1.1/32'
+              '192.0.2.1'
+              '192.0.2.1/255.255.255.255'
+              '192.0.2.1/32'
               are also functionaly equivalent. That is to say, failing to
               provide a subnetmask will create an object with a mask of /32.
 
@@ -1442,10 +1440,10 @@ class IPv4Network(_BaseV4, _BaseNetwork):
               netmask == /0. If no mask is given, a default of /32 is used.
 
               Additionally, an integer can be passed, so
-              IPv4Interface('192.168.1.1') == IPv4Interface(3232235777).
+              IPv4Network('192.0.2.1') == IPv4Network(3221225985)
               or, more generally
-              IPv4Interface(int(IPv4Interface('192.168.1.1'))) ==
-                IPv4Interface('192.168.1.1')
+              IPv4Interface(int(IPv4Interface('192.0.2.1'))) ==
+                IPv4Interface('192.0.2.1')
 
         Raises:
             AddressValueError: If ipaddressisn't a valid IPv4 address.
@@ -1461,7 +1459,6 @@ class IPv4Network(_BaseV4, _BaseNetwork):
 
         # Constructing from a packed address
         if _compat_has_real_bytes:
-            print 'compat'
             if isinstance(address, bytes) and len(address) == 4:
                 self.network_address = IPv4Address(
                     struct.unpack('!I', address)[0])
@@ -1471,7 +1468,7 @@ class IPv4Network(_BaseV4, _BaseNetwork):
                 return
 
         # Efficient constructor from integer.
-        if isinstance(address, (int, long)):
+        if isinstance(address, int):
             self._prefixlen = self._max_prefixlen
             self.netmask = IPv4Address(self._ALL_ONES)
             if address < 0 or address > self._ALL_ONES:
@@ -1625,7 +1622,7 @@ class _BaseV6(object):
             ip_str: A string, the IPv6 ip_str.
 
         Returns:
-            A long, the IPv6 ip_str.
+            An int, the IPv6 address
 
         Raises:
             AddressValueError: if ip_str isn't a valid IPv6 Address.
@@ -1651,7 +1648,7 @@ class _BaseV6(object):
         # This indicates that a run of zeroes has been skipped.
         try:
             skip_index, = (
-                [i for i in xrange(1, len(parts) - 1) if not parts[i]] or
+                [i for i in range(1, len(parts) - 1) if not parts[i]] or
                 [None])
         except ValueError:
             # Can't have more than one '::'
@@ -1685,12 +1682,12 @@ class _BaseV6(object):
 
         try:
             # Now, parse the hextets into a 128-bit integer.
-            ip_int = 0L
-            for i in xrange(parts_hi):
+            ip_int = 0
+            for i in range(parts_hi):
                 ip_int <<= 16
                 ip_int |= self._parse_hextet(parts[i])
             ip_int <<= 16 * parts_skipped
-            for i in xrange(-parts_lo, 0):
+            for i in range(-parts_lo, 0):
                 ip_int <<= 16
                 ip_int |= self._parse_hextet(parts[i])
             return ip_int
@@ -1811,7 +1808,7 @@ class _BaseV6(object):
 
         ip_int = self._ip_int_from_string(ip_str)
         parts = []
-        for i in xrange(self._HEXTET_COUNT):
+        for i in range(self._HEXTET_COUNT):
             parts.append('%04x' % (ip_int & 0xFFFF))
             ip_int >>= 16
         parts.reverse()
@@ -1866,9 +1863,9 @@ class _BaseV6(object):
                              IPv6Network('FE00::/9')]
 
         if isinstance(self, _BaseAddress):
-            return len(filter(lambda x: self in x, reserved_networks)) > 0
-        return len(filter(lambda x: self.network_address in x and
-                          self.broadcast_address in x, reserved_networks)) > 0
+            return len([x for x in reserved_networks if self in x]) > 0
+        return len([x for x in reserved_networks if self.network_address in x
+                    and self.broadcast_address in x]) > 0
 
     @property
     def is_link_local(self):
@@ -2002,11 +1999,11 @@ class IPv6Address(_BaseV6, _BaseAddress):
             address: A string or integer representing the IP
 
               Additionally, an integer can be passed, so
-              IPv6Address('2001:4860::') ==
-                IPv6Address(42541956101370907050197289607612071936L).
+              IPv6Address('2001:db8::') ==
+                IPv6Address(42540766411282592856903984951653826560)
               or, more generally
-              IPv6Address(IPv6Address('2001:4860::')._ip) ==
-                IPv6Address('2001:4860::')
+              IPv6Address(int(IPv6Address('2001:db8::'))) ==
+                IPv6Address('2001:db8::')
 
         Raises:
             AddressValueError: If address isn't a valid IPv6 address.
@@ -2016,7 +2013,7 @@ class IPv6Address(_BaseV6, _BaseAddress):
         _BaseV6.__init__(self, address)
 
         # Efficient constructor from integer.
-        if isinstance(address, (int, long)):
+        if isinstance(address, int):
             self._ip = address
             if address < 0 or address > self._ALL_ONES:
                 raise AddressValueError(address)
@@ -2041,7 +2038,7 @@ class IPv6Address(_BaseV6, _BaseAddress):
 class IPv6Interface(IPv6Address):
 
     def __init__(self, address):
-        if isinstance(address, (int, long)):
+        if isinstance(address, (bytes, int)):
             IPv6Address.__init__(self, address)
             self.network = IPv6Network(self._ip)
             self._prefixlen = self._max_prefixlen
@@ -2065,6 +2062,9 @@ class IPv6Interface(IPv6Address):
                     self.network == other.network)
         except AttributeError:
             return NotImplemented
+
+    def __hash__(self):
+        return self._ip ^ self._prefixlen ^ int(self.network.network_address)
 
     @property
     def prefixlen(self):
@@ -2090,13 +2090,12 @@ class IPv6Network(_BaseV6, _BaseNetwork):
 
     """This class represents and manipulates 128-bit IPv6 networks.
 
-    Attributes: [examples for IPv6('2001:658:22A:CAFE:200::1/64')]
-        .ip: IPv6Address('2001:658:22a:cafe:200::1')
-        .network_address: IPv6Address('2001:658:22a:cafe::')
-        .hostmask: IPv6Address('::ffff:ffff:ffff:ffff')
-        .broadcast_address: IPv6Address('2001:658:22a:cafe:ffff:ffff:ffff:ffff')
-        .netmask: IPv6Address('ffff:ffff:ffff:ffff::')
-        .prefixlen: 64
+    Attributes: [examples for IPv6('2001:db8::1000/124')]
+        .network_address: IPv6Address('2001:db8::1000')
+        .hostmask: IPv6Address('::f')
+        .broadcast_address: IPv6Address('2001:db8::100f')
+        .netmask: IPv6Address('ffff:ffff:ffff:ffff:ffff:ffff:ffff:fff0')
+        .prefixlen: 124
 
     """
 
@@ -2106,23 +2105,23 @@ class IPv6Network(_BaseV6, _BaseNetwork):
         Args:
             address: A string or integer representing the IPv6 network or the IP
               and prefix/netmask.
-              '2001:4860::/128'
-              '2001:4860:0000:0000:0000:0000:0000:0000/128'
-              '2001:4860::'
+              '2001:db8::/128'
+              '2001:db8:0000:0000:0000:0000:0000:0000/128'
+              '2001:db8::'
               are all functionally the same in IPv6.  That is to say,
               failing to provide a subnetmask will create an object with
               a mask of /128.
 
               Additionally, an integer can be passed, so
-              IPv6Network('2001:4860::') ==
-                IPv6Network(42541956101370907050197289607612071936L).
+              IPv6Network('2001:db8::') ==
+                IPv6Network(42540766411282592856903984951653826560)
               or, more generally
-              IPv6Network(IPv6Network('2001:4860::')._ip) ==
-                IPv6Network('2001:4860::')
+              IPv6Network(int(IPv6Network('2001:db8::'))) ==
+                IPv6Network('2001:db8::')
 
             strict: A boolean. If true, ensure that we have been passed
-              A true network address, eg, 192.168.1.0/24 and not an
-              IP address on a network, eg, 192.168.1.1/24.
+              A true network address, eg, 2001:db8::1000/124 and not an
+              IP address on a network, eg, 2001:db8::1/124.
 
         Raises:
             AddressValueError: If address isn't a valid IPv6 address.
@@ -2136,7 +2135,7 @@ class IPv6Network(_BaseV6, _BaseNetwork):
         _BaseNetwork.__init__(self, address)
 
         # Efficient constructor from integer.
-        if isinstance(address, (int, long)):
+        if isinstance(address, int):
             if address < 0 or address > self._ALL_ONES:
                 raise AddressValueError(address)
             self.network_address = IPv6Address(address)
