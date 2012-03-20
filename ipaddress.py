@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Copyright 2007 Google Inc.
 #  Licensed to PSF under a Contributor Agreement.
@@ -599,7 +599,7 @@ class _BaseAddress(_IPAddressBase):
         return  '%s' % self._string_from_ip_int(self._ip)
 
     def __hash__(self):
-        return hash(hex(long(self._ip)))
+        return hash(hex(int(self._ip)))
 
     def _get_address_key(self):
         return (self._version, self)
@@ -1135,7 +1135,7 @@ class _BaseV4(object):
 
         """
         octets = []
-        for _ in xrange(4):
+        for _ in range(4):
             octets.insert(0, str(ip_int & 0xFF))
             ip_int >>= 8
         return '.'.join(octets)
@@ -1269,7 +1269,7 @@ class IPv4Address(_BaseV4, _BaseAddress):
         _BaseV4.__init__(self, address)
 
         # Efficient constructor from integer.
-        if isinstance(address, (int, long)):
+        if isinstance(address, int):
             self._ip = address
             if address < 0 or address > self._ALL_ONES:
                 raise AddressValueError(address)
@@ -1298,7 +1298,7 @@ class IPv4Interface(IPv4Address):
     _valid_mask_octets = set((255, 254, 252, 248, 240, 224, 192, 128, 0))
 
     def __init__(self, address):
-        if isinstance(address, (int, long)):
+        if isinstance(address, (bytes, int)):
             IPv4Address.__init__(self, address)
             self.network = IPv4Network(self._ip)
             self._prefixlen = self._max_prefixlen
@@ -1326,6 +1326,9 @@ class IPv4Interface(IPv4Address):
                     self.network == other.network)
         except AttributeError:
             return NotImplemented
+
+    def __hash__(self):
+        return self._ip ^ self._prefixlen ^ int(self.network.network_address)
 
     def _is_valid_netmask(self, netmask):
         """Verify that the netmask is valid.
@@ -1465,7 +1468,7 @@ class IPv4Network(_BaseV4, _BaseNetwork):
                 return
 
         # Efficient constructor from integer.
-        if isinstance(address, (int, long)):
+        if isinstance(address, int):
             self._prefixlen = self._max_prefixlen
             self.netmask = IPv4Address(self._ALL_ONES)
             if address < 0 or address > self._ALL_ONES:
@@ -1619,7 +1622,7 @@ class _BaseV6(object):
             ip_str: A string, the IPv6 ip_str.
 
         Returns:
-            A long, the IPv6 ip_str.
+            An int, the IPv6 address
 
         Raises:
             AddressValueError: if ip_str isn't a valid IPv6 Address.
@@ -1645,7 +1648,7 @@ class _BaseV6(object):
         # This indicates that a run of zeroes has been skipped.
         try:
             skip_index, = (
-                [i for i in xrange(1, len(parts) - 1) if not parts[i]] or
+                [i for i in range(1, len(parts) - 1) if not parts[i]] or
                 [None])
         except ValueError:
             # Can't have more than one '::'
@@ -1679,12 +1682,12 @@ class _BaseV6(object):
 
         try:
             # Now, parse the hextets into a 128-bit integer.
-            ip_int = 0L
-            for i in xrange(parts_hi):
+            ip_int = 0
+            for i in range(parts_hi):
                 ip_int <<= 16
                 ip_int |= self._parse_hextet(parts[i])
             ip_int <<= 16 * parts_skipped
-            for i in xrange(-parts_lo, 0):
+            for i in range(-parts_lo, 0):
                 ip_int <<= 16
                 ip_int |= self._parse_hextet(parts[i])
             return ip_int
@@ -1805,7 +1808,7 @@ class _BaseV6(object):
 
         ip_int = self._ip_int_from_string(ip_str)
         parts = []
-        for i in xrange(self._HEXTET_COUNT):
+        for i in range(self._HEXTET_COUNT):
             parts.append('%04x' % (ip_int & 0xFFFF))
             ip_int >>= 16
         parts.reverse()
@@ -1860,9 +1863,9 @@ class _BaseV6(object):
                              IPv6Network('FE00::/9')]
 
         if isinstance(self, _BaseAddress):
-            return len(filter(lambda x: self in x, reserved_networks)) > 0
-        return len(filter(lambda x: self.network_address in x and
-                          self.broadcast_address in x, reserved_networks)) > 0
+            return len([x for x in reserved_networks if self in x]) > 0
+        return len([x for x in reserved_networks if self.network_address in x
+                    and self.broadcast_address in x]) > 0
 
     @property
     def is_link_local(self):
@@ -2010,7 +2013,7 @@ class IPv6Address(_BaseV6, _BaseAddress):
         _BaseV6.__init__(self, address)
 
         # Efficient constructor from integer.
-        if isinstance(address, (int, long)):
+        if isinstance(address, int):
             self._ip = address
             if address < 0 or address > self._ALL_ONES:
                 raise AddressValueError(address)
@@ -2035,7 +2038,7 @@ class IPv6Address(_BaseV6, _BaseAddress):
 class IPv6Interface(IPv6Address):
 
     def __init__(self, address):
-        if isinstance(address, (int, long)):
+        if isinstance(address, (bytes, int)):
             IPv6Address.__init__(self, address)
             self.network = IPv6Network(self._ip)
             self._prefixlen = self._max_prefixlen
@@ -2059,6 +2062,9 @@ class IPv6Interface(IPv6Address):
                     self.network == other.network)
         except AttributeError:
             return NotImplemented
+
+    def __hash__(self):
+        return self._ip ^ self._prefixlen ^ int(self.network.network_address)
 
     @property
     def prefixlen(self):
@@ -2129,7 +2135,7 @@ class IPv6Network(_BaseV6, _BaseNetwork):
         _BaseNetwork.__init__(self, address)
 
         # Efficient constructor from integer.
-        if isinstance(address, (int, long)):
+        if isinstance(address, int):
             if address < 0 or address > self._ALL_ONES:
                 raise AddressValueError(address)
             self.network_address = IPv6Address(address)
