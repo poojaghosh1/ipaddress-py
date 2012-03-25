@@ -301,12 +301,12 @@ def summarize_address_range(first, last):
                 break
         prefix = _get_prefix_length(first_int, current, ip_bits)
         net = ip('%s/%d' % (str(first), prefix))
-        networks.append(net)
+        yield net
+        #networks.append(net)
         if current == ip._ALL_ONES:
             break
         first_int = current + 1
         first = ip_address(first_int, version=first._version)
-    return networks
 
 def _collapse_address_list_recursive(addresses):
     """Loops through the addresses, collapsing concurrent netblocks.

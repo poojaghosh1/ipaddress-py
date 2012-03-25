@@ -620,36 +620,40 @@ class IpaddrUnitTest(unittest.TestCase):
         ip1 = ipaddress.ip_address('1.1.1.0')
         ip2 = ipaddress.ip_address('1.1.1.255')
         # test a /24 is sumamrized properly
-        self.assertEqual(summarize(ip1, ip2)[0],
+        self.assertEqual(list(summarize(ip1, ip2))[0],
                          ipaddress.ip_network('1.1.1.0/24'))
         # test an  IPv4 range that isn't on a network byte boundary
         ip2 = ipaddress.ip_address('1.1.1.8')
-        self.assertEqual(summarize(ip1, ip2),
+        self.assertEqual(list(summarize(ip1, ip2)),
                          [ipaddress.ip_network('1.1.1.0/29'),
                           ipaddress.ip_network('1.1.1.8')])
 
         ip1 = ipaddress.ip_address('1::')
         ip2 = ipaddress.ip_address('1:ffff:ffff:ffff:ffff:ffff:ffff:ffff')
         # test a IPv6 is sumamrized properly
-        self.assertEqual(summarize(ip1, ip2)[0], ipaddress.ip_network('1::/16'))
+        self.assertEqual(list(summarize(ip1, ip2))[0],
+                         ipaddress.ip_network('1::/16'))
         # test an IPv6 range that isn't on a network byte boundary
         ip2 = ipaddress.ip_address('2::')
-        self.assertEqual(summarize(ip1, ip2), [ipaddress.ip_network('1::/16'),
-                                               ipaddress.ip_network('2::/128')])
+        self.assertEqual(list(summarize(ip1, ip2)),
+                         [ipaddress.ip_network('1::/16'),
+                          ipaddress.ip_network('2::/128')])
 
         # test exception raised when first is greater than last
-        self.assertRaises(ValueError, summarize,
-                          ipaddress.ip_address('1.1.1.0'),
-                          ipaddress.ip_address('1.1.0.0'))
+        self.assertRaises(ValueError, list,
+                          summarize(ipaddress.ip_address('1.1.1.0'),
+                                    ipaddress.ip_address('1.1.0.0')))
         # test exception raised when first and last aren't IP addresses
-        self.assertRaises(TypeError, summarize,
-                          ipaddress.ip_network('1.1.1.0'),
-                          ipaddress.ip_network('1.1.0.0'))
-        self.assertRaises(TypeError, summarize,
-            ipaddress.ip_network('1.1.1.0'), ipaddress.ip_network('1.1.0.0'))
+        self.assertRaises(TypeError, list,
+                          summarize(ipaddress.ip_network('1.1.1.0'),
+                                    ipaddress.ip_network('1.1.0.0')))
+        self.assertRaises(TypeError, list,
+                          summarize(ipaddress.ip_network('1.1.1.0'),
+                                    ipaddress.ip_network('1.1.0.0')))
         # test exception raised when first and last are not same version
-        self.assertRaises(TypeError, summarize, ipaddress.ip_address('::'),
-            ipaddress.ip_network('1.1.0.0'))
+        self.assertRaises(TypeError, list,
+                          summarize(ipaddress.ip_address('::'),
+                                    ipaddress.ip_network('1.1.0.0')))
 
     def testAddressComparison(self):
         self.assertTrue(ipaddress.ip_address('1.1.1.1') <=
