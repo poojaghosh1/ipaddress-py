@@ -342,7 +342,7 @@ def _collapse_address_list_recursive(addresses):
         if (cur_addr.network_address >= ret_array[-1].network_address and
             cur_addr.broadcast_address <= ret_array[-1].broadcast_address):
             optimized = True
-        elif cur_addr == ret_array[-1].supernet().subnet()[1]:
+        elif cur_addr == list(ret_array[-1].supernet().subnet())[1]:
             ret_array.append(ret_array.pop().supernet())
             optimized = True
         else:
@@ -925,7 +925,7 @@ class _BaseNetwork(_IPAddressBase):
         """
         return (self._version, self.network_address, self.netmask)
 
-    def iter_subnets(self, prefixlen_diff=1, new_prefix=None):
+    def subnet(self, prefixlen_diff=1, new_prefix=None):
         """The subnets which join to make the current subnet.
 
         In the case that self contains only one IP
@@ -991,10 +991,6 @@ class _BaseNetwork(_IPAddressBase):
         """Return the network object with the host bits masked out."""
         return ip_network('%s/%d' % (self.network_address, self._prefixlen),
                          version=self._version)
-
-    def subnet(self, prefixlen_diff=1, new_prefix=None):
-        """Return a list of subnets, rather than an iterator."""
-        return list(self.iter_subnets(prefixlen_diff, new_prefix))
 
     def supernet(self, prefixlen_diff=1, new_prefix=None):
         """The supernet containing the current network.

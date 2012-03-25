@@ -38,13 +38,6 @@ class IpaddrUnitTest(unittest.TestCase):
             '2001:658:22a:cafe:200:0:0:1/64')
         self.ipv6_network = ipaddress.IPv6Network('2001:658:22a:cafe::/64')
 
-    def tearDown(self):
-        #del(self.ipv4)
-        #del(self.ipv4_hostmask)
-        #del(self.ipv6)
-        #del(self)
-        pass
-
     def testRepr(self):
         self.assertEqual("IPv4Interface('1.2.3.4/32')",
                          repr(ipaddress.IPv4Interface('1.2.3.4')))
@@ -331,12 +324,6 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(self.ipv6_network.supernet(prefixlen_diff=2),
                          self.ipv6_network.supernet(new_prefix=62))
 
-    def testIterSubnets(self):
-        self.assertEqual(self.ipv4_network.subnet(),
-                         list(self.ipv4_network.iter_subnets()))
-        self.assertEqual(self.ipv6_network.subnet(),
-                         list(self.ipv6_network.iter_subnets()))
-
     def testIterHosts(self):
         self.assertEqual([ipaddress.IPv4Address('2.0.0.0'),
                           ipaddress.IPv4Address('2.0.0.1')],
@@ -345,23 +332,29 @@ class IpaddrUnitTest(unittest.TestCase):
     def testFancySubnetting(self):
         self.assertEqual(sorted(self.ipv4_network.subnet(prefixlen_diff=3)),
                          sorted(self.ipv4_network.subnet(new_prefix=27)))
-        self.assertRaises(ValueError, self.ipv4_network.subnet, new_prefix=23)
-        self.assertRaises(ValueError, self.ipv4_network.subnet,
-                          prefixlen_diff=3, new_prefix=27)
+        self.assertRaises(ValueError, list,
+                          self.ipv4_network.subnet(new_prefix=23))
+        self.assertRaises(ValueError, list,
+                          self.ipv4_network.subnet(prefixlen_diff=3,
+                                                   new_prefix=27))
         self.assertEqual(sorted(self.ipv6_network.subnet(prefixlen_diff=4)),
                          sorted(self.ipv6_network.subnet(new_prefix=68)))
-        self.assertRaises(ValueError, self.ipv6_network.subnet, new_prefix=63)
-        self.assertRaises(ValueError, self.ipv6_network.subnet,
-                          prefixlen_diff=4, new_prefix=68)
+        self.assertRaises(ValueError, list,
+                          self.ipv6_network.subnet(new_prefix=63))
+        self.assertRaises(ValueError, list,
+                          self.ipv6_network.subnet(prefixlen_diff=4,
+                                                   new_prefix=68))
 
     def testGetSubnet(self):
-        self.assertEqual(self.ipv4_network.subnet()[0].prefixlen, 25)
-        self.assertEqual(str(self.ipv4_network.subnet()[0].network_address),
+        self.assertEqual(list(self.ipv4_network.subnet())[0].prefixlen, 25)
+        self.assertEqual(str(list(
+                    self.ipv4_network.subnet())[0].network_address),
                          '1.2.3.0')
-        self.assertEqual(str(self.ipv4_network.subnet()[1].network_address),
+        self.assertEqual(str(list(
+                    self.ipv4_network.subnet())[1].network_address),
                          '1.2.3.128')
 
-        self.assertEqual(self.ipv6_network.subnet()[0].prefixlen, 65)
+        self.assertEqual(list(self.ipv6_network.subnet())[0].prefixlen, 65)
 
     def testGetSubnetForSingle32(self):
         ip = ipaddress.IPv4Network('1.2.3.4/32')
@@ -392,12 +385,14 @@ class IpaddrUnitTest(unittest.TestCase):
              '2001:658:22a:cafe:c000::/66'])
 
     def testSubnetFailsForLargeCidrDiff(self):
-        self.assertRaises(ValueError,
-                          self.ipv4_interface.network.subnet, 9)
-        self.assertRaises(ValueError, self.ipv4_network.subnet, 9)
-        self.assertRaises(ValueError,
-                          self.ipv6_interface.network.subnet, 65)
-        self.assertRaises(ValueError, self.ipv6_network.subnet, 65)
+        self.assertRaises(ValueError, list,
+                          self.ipv4_interface.network.subnet(9))
+        self.assertRaises(ValueError, list,
+                          self.ipv4_network.subnet(9))
+        self.assertRaises(ValueError, list,
+                          self.ipv6_interface.network.subnet(65))
+        self.assertRaises(ValueError, list,
+                          self.ipv6_network.subnet(65))
 
     def testSupernetFailsForLargeCidrDiff(self):
         self.assertRaises(ValueError,
@@ -406,18 +401,22 @@ class IpaddrUnitTest(unittest.TestCase):
                           self.ipv6_interface.network.supernet, 65)
 
     def testSubnetFailsForNegativeCidrDiff(self):
-        self.assertRaises(ValueError, self.ipv4_interface.network.subnet, -1)
-        self.assertRaises(ValueError, self.ipv4_network.subnet, -1)
-        self.assertRaises(ValueError, self.ipv6_interface.network.subnet, -1)
-        self.assertRaises(ValueError, self.ipv6_network.subnet, -1)
+        self.assertRaises(ValueError, list,
+                          self.ipv4_interface.network.subnet(-1))
+        self.assertRaises(ValueError, list,
+                          self.ipv4_network.network.subnet(-1))
+        self.assertRaises(ValueError, list,
+                          self.ipv6_interface.network.subnet(-1))
+        self.assertRaises(ValueError, list,
+                          self.ipv6_network.subnet(-1))
 
     def testGetNumHosts(self):
         self.assertEqual(self.ipv4_network.numhosts, 256)
-        self.assertEqual(self.ipv4_network.subnet()[0].numhosts, 128)
+        self.assertEqual(list(self.ipv4_network.subnet())[0].numhosts, 128)
         self.assertEqual(self.ipv4_network.supernet().numhosts, 512)
 
         self.assertEqual(self.ipv6_network.numhosts, 18446744073709551616)
-        self.assertEqual(self.ipv6_network.subnet()[0].numhosts,
+        self.assertEqual(list(self.ipv6_network.subnet())[0].numhosts,
                          9223372036854775808)
         self.assertEqual(self.ipv6_network.supernet().numhosts,
                          36893488147419103232)
@@ -1057,10 +1056,10 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(ipaddress.ip_network('1::/16').Contains(
             ipaddress.ip_network('2::/16')), False)
 
-        self.assertEqual(ipaddress.ip_network('0.0.0.0/0').Subnet(),
+        self.assertEqual(list(ipaddress.ip_network('0.0.0.0/0').Subnet()),
                          [ipaddress.ip_network('0.0.0.0/1'),
                           ipaddress.ip_network('128.0.0.0/1')])
-        self.assertEqual(ipaddress.ip_network('::/127').Subnet(),
+        self.assertEqual(list(ipaddress.ip_network('::/127').Subnet()),
                          [ipaddress.ip_network('::/128'),
                           ipaddress.ip_network('::1/128')])
 
