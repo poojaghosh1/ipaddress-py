@@ -946,12 +946,12 @@ class IpaddrUnitTest(unittest.TestCase):
         addr2 = ipaddress.ip_network('10.1.1.0/26')
         addr3 = ipaddress.ip_network('10.2.1.0/24')
         addr4 = ipaddress.ip_address('10.1.1.0')
-        self.assertEqual(addr1.address_exclude(addr2),
+        self.assertEqual(sorted(list(addr1.address_exclude(addr2))),
                          [ipaddress.ip_network('10.1.1.64/26'),
                           ipaddress.ip_network('10.1.1.128/25')])
-        self.assertRaises(ValueError, addr1.address_exclude, addr3)
-        self.assertRaises(TypeError, addr1.address_exclude, addr4)
-        self.assertEqual(addr1.address_exclude(addr1), [])
+        self.assertRaises(ValueError, list, addr1.address_exclude(addr3))
+        self.assertRaises(TypeError, list, addr1.address_exclude(addr4))
+        self.assertEqual(list(addr1.address_exclude(addr1)), [])
 
     def testHash(self):
         self.assertEqual(hash(ipaddress.ip_network('10.1.1.0/24')),
@@ -1045,8 +1045,8 @@ class IpaddrUnitTest(unittest.TestCase):
              ipaddress.ip_network('1.1.1.0/24')]),
                          [ipaddress.ip_network('1.1.0.0/23')])
 
-        self.assertEqual(ipaddress.ip_network('::42:0/112').AddressExclude(
-            ipaddress.ip_network('::42:8000/113')),
+        self.assertEqual(list(ipaddress.ip_network('::42:0/112').AddressExclude(
+            ipaddress.ip_network('::42:8000/113'))),
                          [ipaddress.ip_network('::42:0/113')])
 
         self.assertTrue(

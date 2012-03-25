@@ -829,7 +829,7 @@ class _BaseNetwork(_IPAddressBase):
             raise ValueError('%s not contained in %s' % (str(other), str(self)))
 
         if other == self:
-            return []
+            raise StopIteration
 
         ret_addrs = []
 
@@ -842,11 +842,11 @@ class _BaseNetwork(_IPAddressBase):
         while s1 != other and s2 != other:
             if (other.network_address >= s1.network_address and
                 other.broadcast_address <= s1.broadcast_address):
-                ret_addrs.append(s2)
+                yield s2
                 s1, s2 = s1.subnet()
             elif (other.network_address >= s2.network_address and
                   other.broadcast_address <= s2.broadcast_address):
-                ret_addrs.append(s1)
+                yield s1
                 s1, s2 = s2.subnet()
             else:
                 # If we got here, there's a bug somewhere.
@@ -854,16 +854,15 @@ class _BaseNetwork(_IPAddressBase):
                                      's1: %s s2: %s other: %s' %
                                      (str(s1), str(s2), str(other)))
         if s1 == other:
-            ret_addrs.append(s2)
+            yield s2
         elif s2 == other:
-            ret_addrs.append(s1)
+            yield s1
         else:
             # If we got here, there's a bug somewhere.
             raise AssertionError('Error performing exclusion: '
                                  's1: %s s2: %s other: %s' %
                                  (str(s1), str(s2), str(other)))
 
-        return sorted(ret_addrs, key=_BaseNetwork._get_networks_key)
 
     def compare_networks(self, other):
         """Compare two IP objects.
