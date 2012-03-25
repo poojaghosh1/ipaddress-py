@@ -351,7 +351,7 @@ def _collapse_address_list_recursive(addresses):
     if optimized:
         return _collapse_address_list_recursive(ret_array)
 
-    return ret_array
+    return iter(ret_array)
 
 
 def collapse_address_list(addresses):

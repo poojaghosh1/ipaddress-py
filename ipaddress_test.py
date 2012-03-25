@@ -559,8 +559,8 @@ class IpaddrUnitTest(unittest.TestCase):
         # check that addreses are subsumed properly.
         collapsed = ipaddress.collapse_address_list(
             [ip1, ip2, ip3, ip4, ip5, ip6])
-        self.assertEqual(collapsed, [ipaddress.IPv4Network('1.1.1.0/30'),
-                                     ipaddress.IPv4Network('1.1.1.4/32')])
+        self.assertEqual(list(collapsed), [ipaddress.IPv4Network('1.1.1.0/30'),
+                                           ipaddress.IPv4Network('1.1.1.4/32')])
 
         # test a mix of IP addresses and networks including some duplicates
         ip1 = ipaddress.IPv4Address('1.1.1.0')
@@ -571,7 +571,7 @@ class IpaddrUnitTest(unittest.TestCase):
         #ip6 = ipaddress.IPv4Interface('1.1.1.4/30')
         # check that addreses are subsumed properly.
         collapsed = ipaddress.collapse_address_list([ip1, ip2, ip3, ip4])
-        self.assertEqual(collapsed, [ipaddress.IPv4Network('1.1.1.0/30')])
+        self.assertEqual(list(collapsed), [ipaddress.IPv4Network('1.1.1.0/30')])
 
         # test only IP networks
         ip1 = ipaddress.IPv4Network('1.1.0.0/24')
@@ -584,28 +584,30 @@ class IpaddrUnitTest(unittest.TestCase):
         # check that addreses are subsumed properly.
         collapsed = ipaddress.collapse_address_list([ip1, ip2, ip3, ip4, ip5,
                                                      ip6])
-        self.assertEqual(collapsed, [ipaddress.IPv4Network('1.1.0.0/22'),
-                                     ipaddress.IPv4Network('1.1.4.0/24')])
+        self.assertEqual(list(collapsed), [ipaddress.IPv4Network('1.1.0.0/22'),
+                                           ipaddress.IPv4Network('1.1.4.0/24')])
 
         # test that two addresses are supernet'ed properly
         collapsed = ipaddress.collapse_address_list([ip1, ip2])
-        self.assertEqual(collapsed, [ipaddress.IPv4Network('1.1.0.0/23')])
+        self.assertEqual(list(collapsed), [ipaddress.IPv4Network('1.1.0.0/23')])
 
         # test same IP networks
         ip_same1 = ip_same2 = ipaddress.IPv4Network('1.1.1.1/32')
-        self.assertEqual(ipaddress.collapse_address_list([ip_same1, ip_same2]),
+        self.assertEqual(list(ipaddress.collapse_address_list(
+                    [ip_same1, ip_same2])),
                          [ip_same1])
 
         # test same IP addresses
         ip_same1 = ip_same2 = ipaddress.IPv4Address('1.1.1.1')
-        self.assertEqual(ipaddress.collapse_address_list([ip_same1, ip_same2]),
+        self.assertEqual(list(ipaddress.collapse_address_list(
+                    [ip_same1, ip_same2])),
                          [ipaddress.ip_network('1.1.1.1/32')])
         ip1 = ipaddress.IPv6Network('2001::/100')
         ip2 = ipaddress.IPv6Network('2001::/120')
         ip3 = ipaddress.IPv6Network('2001::/96')
         # test that ipv6 addresses are subsumed properly.
         collapsed = ipaddress.collapse_address_list([ip1, ip2, ip3])
-        self.assertEqual(collapsed, [ip3])
+        self.assertEqual(list(collapsed), [ip3])
 
         # the toejam test
         ip1 = ipaddress.ip_address('1.1.1.1')
@@ -1044,9 +1046,9 @@ class IpaddrUnitTest(unittest.TestCase):
 
     # backwards compatibility
     def testBackwardsCompability(self):
-        self.assertEqual(ipaddress.CollapseAddrList(
+        self.assertEqual(list(ipaddress.CollapseAddrList(
             [ipaddress.ip_network('1.1.0.0/24'),
-             ipaddress.ip_network('1.1.1.0/24')]),
+             ipaddress.ip_network('1.1.1.0/24')])),
                          [ipaddress.ip_network('1.1.0.0/23')])
 
         self.assertEqual(list(ipaddress.ip_network('::42:0/112').AddressExclude(
