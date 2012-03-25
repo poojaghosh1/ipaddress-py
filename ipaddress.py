@@ -414,15 +414,6 @@ def collapse_address_list(addresses):
 # backwards compatibility
 CollapseAddrList = collapse_address_list
 
-# Test whether this Python implementation supports byte objects that
-# are not identical to str ones.
-# We need to exclude platforms where bytes == str so that we can
-# distinguish between packed representations and strings, for example
-# b'12::' (the IPv4 address 49.50.58.58) and '12::' (an IPv6 address).
-try:
-    _compat_has_real_bytes = bytes is not str
-except NameError: # <Python2.6
-    _compat_has_real_bytes = False
 
 def get_mixed_type_key(obj):
     """Return a key suitable for sorting between networks and addresses.
@@ -520,7 +511,7 @@ class _BaseAddress(_IPAddressBase):
     """
 
     def __init__(self, address):
-        if (not (_compat_has_real_bytes and isinstance(address, bytes))
+        if (not isinstance(address, bytes)
             and '/' in str(address)):
             raise AddressValueError(address)
 
@@ -1276,10 +1267,9 @@ class IPv4Address(_BaseV4, _BaseAddress):
             return
 
         # Constructing from a packed address
-        if _compat_has_real_bytes:
-            if isinstance(address, bytes) and len(address) == 4:
-                self._ip = struct.unpack('!I', address)[0]
-                return
+        if isinstance(address, bytes) and len(address) == 4:
+            self._ip = struct.unpack('!I', address)[0]
+            return
 
         # Assume input argument to be string or any object representation
         # which converts into a formatted IP string.
@@ -1458,14 +1448,13 @@ class IPv4Network(_BaseV4, _BaseNetwork):
         _BaseNetwork.__init__(self, address)
 
         # Constructing from a packed address
-        if _compat_has_real_bytes:
-            if isinstance(address, bytes) and len(address) == 4:
-                self.network_address = IPv4Address(
-                    struct.unpack('!I', address)[0])
-                self._prefixlen = self._max_prefixlen
-                self.netmask = IPv4Address(self._ALL_ONES)
-                #fixme: address/network test here
-                return
+        if isinstance(address, bytes) and len(address) == 4:
+            self.network_address = IPv4Address(
+                struct.unpack('!I', address)[0])
+            self._prefixlen = self._max_prefixlen
+            self.netmask = IPv4Address(self._ALL_ONES)
+            #fixme: address/network test here
+            return
 
         # Efficient constructor from integer.
         if isinstance(address, int):
@@ -2020,11 +2009,10 @@ class IPv6Address(_BaseV6, _BaseAddress):
             return
 
         # Constructing from a packed address
-        if _compat_has_real_bytes:
-            if isinstance(address, bytes) and len(address) == 16:
-                tmp = struct.unpack('!QQ', address)
-                self._ip = (tmp[0] << 64) | tmp[1]
-                return
+        if isinstance(address, bytes) and len(address) == 16:
+            tmp = struct.unpack('!QQ', address)
+            self._ip = (tmp[0] << 64) | tmp[1]
+            return
 
         # Assume input argument to be string or any object representation
         # which converts into a formatted IP string.
@@ -2150,16 +2138,15 @@ class IPv6Network(_BaseV6, _BaseNetwork):
             return
 
         # Constructing from a packed address
-        if _compat_has_real_bytes:
-            if isinstance(address, bytes) and len(address) == 16:
-                tmp = struct.unpack('!QQ', address)
-                self.network_address = IPv6Address((tmp[0] << 64) | tmp[1])
-                self._prefixlen = self._max_prefixlen
-                self.netmask = IPv6Address(self._ALL_ONES)
-                if strict:
-                    if (IPv6Address(int(self.network_address) &
-                                    int(self.netmask)) != self.network_address):
-                        raise ValueError('%s has host bits set' % str(self))
+        if isinstance(address, bytes) and len(address) == 16:
+            tmp = struct.unpack('!QQ', address)
+            self.network_address = IPv6Address((tmp[0] << 64) | tmp[1])
+            self._prefixlen = self._max_prefixlen
+            self.netmask = IPv6Address(self._ALL_ONES)
+            if strict:
+                if (IPv6Address(int(self.network_address) &
+                                int(self.netmask)) != self.network_address):
+                    raise ValueError('%s has host bits set' % str(self))
                 self.network_address = IPv6Address(int(self.network_address) &
                                                    int(self.netmask))
                 return
