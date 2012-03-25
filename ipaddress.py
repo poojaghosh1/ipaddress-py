@@ -308,7 +308,7 @@ def summarize_address_range(first, last):
         first_int = current + 1
         first = ip_address(first_int, version=first._version)
 
-def _collapse_address_list_recursive(addresses):
+def _collapse_addresses_recursive(addresses):
     """Loops through the addresses, collapsing concurrent netblocks.
 
     Example:
@@ -318,11 +318,11 @@ def _collapse_address_list_recursive(addresses):
         ip3 = IPv4Network('192.0.2.128/26')
         ip4 = IPv4Network('192.0.2.192/26')
 
-        _collapse_address_list_recursive([ip1, ip2, ip3, ip4]) ->
+        _collapse_addresses_recursive([ip1, ip2, ip3, ip4]) ->
           [IPv4Network('192.0.2.0/24')]
 
         This shouldn't be called directly; it is called via
-          collapse_address_list([]).
+          collapse_addresses([]).
 
     Args:
         addresses: A list of IPv4Network's or IPv6Network's
@@ -349,21 +349,21 @@ def _collapse_address_list_recursive(addresses):
             ret_array.append(cur_addr)
 
     if optimized:
-        return _collapse_address_list_recursive(ret_array)
+        return _collapse_addresses_recursive(ret_array)
 
-    return iter(ret_array)
+    return ret_array
 
 
-def collapse_address_list(addresses):
+def collapse_addresses(addresses):
     """Collapse a list of IP objects.
 
     Example:
-        collapse_address_list([IPv4Network('192.0.2.0/25'),
-                               IPv4Network('192.0.2.128/25')]) ->
-                              [IPv4Network('192.0.2.0/24')]
+        collapse_addresses([IPv4Network('192.0.2.0/25'),
+                            IPv4Network('192.0.2.128/25')]) ->
+                           [IPv4Network('192.0.2.0/24')]
 
     Args:
-        addresses: A list of IPv4Network or IPv6Network objects.
+        addresses: An iterator of IPv4Network or IPv6Network objects.
 
     Returns:
         A list of IPv4Network or IPv6Network objects depending on what we
@@ -408,11 +408,11 @@ def collapse_address_list(addresses):
         i = ips.index(last) + 1
         addrs.extend(summarize_address_range(first, last))
 
-    return _collapse_address_list_recursive(sorted(
-        addrs + nets, key=_BaseNetwork._get_networks_key))
+    return iter(_collapse_addresses_recursive(sorted(
+        addrs + nets, key=_BaseNetwork._get_networks_key)))
 
 # backwards compatibility
-CollapseAddrList = collapse_address_list
+CollapseAddrList = collapse_addresses
 
 
 def get_mixed_type_key(obj):
