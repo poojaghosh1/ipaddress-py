@@ -244,6 +244,7 @@ def _count_righthand_zero_bits(number, bits):
         if (number >> i) % 2:
             return i
 
+
 def summarize_address_range(first, last):
     """Summarize a network range given the first and last IP addresses.
 
@@ -409,9 +410,6 @@ def collapse_addresses(addresses):
     return iter(_collapse_addresses_recursive(sorted(
         addrs + nets, key=_BaseNetwork._get_networks_key)))
 
-# backwards compatibility
-CollapseAddrList = collapse_addresses
-
 
 def get_mixed_type_key(obj):
     """Return a key suitable for sorting between networks and addresses.
@@ -436,6 +434,7 @@ def get_mixed_type_key(obj):
     elif isinstance(obj, _BaseAddress):
         return obj._get_address_key()
     return NotImplemented
+
 
 class _IPAddressBase(object):
 
@@ -861,7 +860,6 @@ class _BaseNetwork(_IPAddressBase):
                                  's1: %s s2: %s other: %s' %
                                  (str(s1), str(s2), str(other)))
 
-
     def compare_networks(self, other):
         """Compare two IP objects.
 
@@ -908,8 +906,6 @@ class _BaseNetwork(_IPAddressBase):
             return -1
         if self.netmask > other.netmask:
             return 1
-        # self.network_address == other.network_address and
-        # self.netmask == other.netmask
         return 0
 
     def _get_networks_key(self):
@@ -1031,13 +1027,6 @@ class _BaseNetwork(_IPAddressBase):
                          version=self._version, strict=False)
         return ip_network('%s/%d' % (str(t.network_address), t.prefixlen),
                           version=t._version)
-
-    # backwards compatibility
-    Subnet = subnet
-    Supernet = supernet
-    AddressExclude = address_exclude
-    CompareNetworks = compare_networks
-    Contains = __contains__
 
 
 class _BaseV4(object):
@@ -1382,11 +1371,11 @@ class IPv4Interface(IPv4Address):
         return '%s/%s' % (self._string_from_ip_int(self._ip),
                           self.hostmask)
 
+
 class IPv4Network(_BaseV4, _BaseNetwork):
 
     """This class represents and manipulates 32-bit IPv4 network + addresses..
 
-    FIXME:
     Attributes: [examples for IPv4Network('192.0.2.0/27')]
         .network_address: IPv4Address('192.0.2.0')
         .hostmask: IPv4Address('0.0.0.31')
@@ -1572,12 +1561,6 @@ class IPv4Network(_BaseV4, _BaseNetwork):
     @property
     def with_hostmask(self):
         return '%s/%s' % (str(self.network_address), str(self.hostmask))
-
-    # backwards compatibility
-    IsRFC1918 = lambda self: self.is_private
-    IsMulticast = lambda self: self.is_multicast
-    IsLoopback = lambda self: self.is_loopback
-    IsLinkLocal = lambda self: self.is_link_local
 
 
 class _BaseV6(object):
@@ -2171,8 +2154,6 @@ class IPv6Network(_BaseV6, _BaseNetwork):
 
         if self._prefixlen == (self._max_prefixlen - 1):
             self.iterhosts = self.__iter__
-
-
 
     def __str__(self):
         return '%s/%d' % (str(self.network_address),

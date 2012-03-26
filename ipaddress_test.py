@@ -1044,43 +1044,6 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertEqual(hex(0x20010658022ACAFE0200000000000001),
                          hex(self.ipv6_address))
 
-    # backwards compatibility
-    def testBackwardsCompability(self):
-        self.assertEqual(list(ipaddress.CollapseAddrList(
-            [ipaddress.ip_network('1.1.0.0/24'),
-             ipaddress.ip_network('1.1.1.0/24')])),
-                         [ipaddress.ip_network('1.1.0.0/23')])
-
-        self.assertEqual(list(ipaddress.ip_network('::42:0/112').AddressExclude(
-            ipaddress.ip_network('::42:8000/113'))),
-                         [ipaddress.ip_network('::42:0/113')])
-
-        self.assertTrue(
-            ipaddress.ip_network('1::/128').CompareNetworks(
-                ipaddress.ip_network('2::/128')) < 0)
-
-        self.assertEqual(ipaddress.ip_network('1::/16').Contains(
-            ipaddress.ip_network('2::/16')), False)
-
-        self.assertEqual(list(ipaddress.ip_network('0.0.0.0/0').Subnet()),
-                         [ipaddress.ip_network('0.0.0.0/1'),
-                          ipaddress.ip_network('128.0.0.0/1')])
-        self.assertEqual(list(ipaddress.ip_network('::/127').Subnet()),
-                         [ipaddress.ip_network('::/128'),
-                          ipaddress.ip_network('::1/128')])
-
-        self.assertEqual(ipaddress.ip_network('1.0.0.0/32').Supernet(),
-                         ipaddress.ip_network('1.0.0.0/31'))
-        self.assertEqual(ipaddress.ip_network('::/121').Supernet(),
-                         ipaddress.ip_network('::/120'))
-
-        self.assertEqual(ipaddress.ip_network('10.0.0.2').IsRFC1918(), True)
-        self.assertEqual(ipaddress.ip_network('10.0.0.0').IsMulticast(), False)
-        self.assertEqual(ipaddress.ip_network('127.255.255.255').IsLoopback(),
-                         True)
-        self.assertEqual(ipaddress.ip_network('169.255.255.255').IsLinkLocal(),
-                         False)
-
     def testForceVersion(self):
         self.assertEqual(ipaddress.ip_network(1).version, 4)
         self.assertEqual(ipaddress.ip_network(1, version=6).version, 6)
