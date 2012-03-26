@@ -22,7 +22,7 @@ import ipaddress
 setup(name='ipaddress',
       maintainer='Google',
       maintainer_email='ipaddr-py-dev@googlegroups.com',
-      version=ipaddr.__version__,
+      version=ipaddress.__version__,
       url='http://code.google.com/p/ipaddress-py/',
       license='Apache License, Version 2.0',
       classifiers=[
