@@ -258,8 +258,7 @@ def summarize_address_range(first, last):
         last: the last IPv4Address or IPv6Address in the range.
 
     Returns:
-        The address range collapsed to a list of IPv4Network's or
-        IPv6Network's.
+        An iterator of the summarized IPv(4|6) network objects.
 
     Raise:
         TypeError:
@@ -366,8 +365,7 @@ def collapse_addresses(addresses):
         addresses: An iterator of IPv4Network or IPv6Network objects.
 
     Returns:
-        A list of IPv4Network or IPv6Network objects depending on what we
-        were passed.
+        An iterator of the collapsed IPv(4|6)Network objects.
 
     Raises:
         TypeError: If passed a list of mixed version objects.
@@ -808,7 +806,7 @@ class _BaseNetwork(_IPAddressBase):
             other: An IPv4Network or IPv6Network object of the same type.
 
         Returns:
-            A sorted list of IPvXNetwork objects addresses which is self
+            An iterator of the the IPv(4|6)Network objects which is self
             minus other.
 
         Raises:
