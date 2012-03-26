@@ -769,7 +769,7 @@ class _BaseNetwork(_IPAddressBase):
         return '%s/%s' % (str(self.ip), str(self.hostmask))
 
     @property
-    def numhosts(self):
+    def num_addresses(self):
         """Number of hosts in the current subnet."""
         return int(self.broadcast_address) - int(self.network_address) + 1
 

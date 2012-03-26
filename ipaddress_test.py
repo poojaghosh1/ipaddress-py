@@ -410,15 +410,15 @@ class IpaddrUnitTest(unittest.TestCase):
         self.assertRaises(ValueError, list,
                           self.ipv6_network.subnet(-1))
 
-    def testGetNumHosts(self):
-        self.assertEqual(self.ipv4_network.numhosts, 256)
-        self.assertEqual(list(self.ipv4_network.subnet())[0].numhosts, 128)
-        self.assertEqual(self.ipv4_network.supernet().numhosts, 512)
+    def testGetNum_Addresses(self):
+        self.assertEqual(self.ipv4_network.num_addresses, 256)
+        self.assertEqual(list(self.ipv4_network.subnet())[0].num_addresses, 128)
+        self.assertEqual(self.ipv4_network.supernet().num_addresses, 512)
 
-        self.assertEqual(self.ipv6_network.numhosts, 18446744073709551616)
-        self.assertEqual(list(self.ipv6_network.subnet())[0].numhosts,
+        self.assertEqual(self.ipv6_network.num_addresses, 18446744073709551616)
+        self.assertEqual(list(self.ipv6_network.subnet())[0].num_addresses,
                          9223372036854775808)
-        self.assertEqual(self.ipv6_network.supernet().numhosts,
+        self.assertEqual(self.ipv6_network.supernet().num_addresses,
                          36893488147419103232)
 
     def testContains(self):
