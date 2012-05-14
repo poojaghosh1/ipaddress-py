@@ -923,7 +923,7 @@ class _BaseNetwork(_IPAddressBase):
 
         In the case that self contains only one IP
         (self._prefixlen == 32 for IPv4 or self._prefixlen == 128
-        for IPv6), return a list with just ourself.
+        for IPv6), yield an iterator with just ourself.
 
         Args:
             prefixlen_diff: An integer, the amount the prefix length
