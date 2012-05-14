@@ -342,7 +342,7 @@ def _collapse_addresses_recursive(addresses):
         if (cur_addr.network_address >= ret_array[-1].network_address and
             cur_addr.broadcast_address <= ret_array[-1].broadcast_address):
             optimized = True
-        elif cur_addr == list(ret_array[-1].supernet().subnet())[1]:
+        elif cur_addr == list(ret_array[-1].supernet().subnets())[1]:
             ret_array.append(ret_array.pop().supernet())
             optimized = True
         else:
@@ -618,7 +618,7 @@ class _BaseNetwork(_IPAddressBase):
     def __repr__(self):
         return '%s(%r)' % (self.__class__.__name__, str(self))
 
-    def iterhosts(self):
+    def hosts(self):
         """Generate Iterator over usable hosts in a network.
 
            This is like __iter__ except it doesn't return the network
@@ -835,16 +835,16 @@ class _BaseNetwork(_IPAddressBase):
                                       str(other.prefixlen)),
                            version=other._version)
 
-        s1, s2 = self.subnet()
+        s1, s2 = self.subnets()
         while s1 != other and s2 != other:
             if (other.network_address >= s1.network_address and
                 other.broadcast_address <= s1.broadcast_address):
                 yield s2
-                s1, s2 = s1.subnet()
+                s1, s2 = s1.subnets()
             elif (other.network_address >= s2.network_address and
                   other.broadcast_address <= s2.broadcast_address):
                 yield s1
-                s1, s2 = s2.subnet()
+                s1, s2 = s2.subnets()
             else:
                 # If we got here, there's a bug somewhere.
                 raise AssertionError('Error performing exclusion: '
@@ -918,7 +918,7 @@ class _BaseNetwork(_IPAddressBase):
         """
         return (self._version, self.network_address, self.netmask)
 
-    def subnet(self, prefixlen_diff=1, new_prefix=None):
+    def subnets(self, prefixlen_diff=1, new_prefix=None):
         """The subnets which join to make the current subnet.
 
         In the case that self contains only one IP
@@ -1492,7 +1492,7 @@ class IPv4Network(_BaseV4, _BaseNetwork):
                                            int(self.netmask))
 
         if self._prefixlen == (self._max_prefixlen - 1):
-            self.iterhosts = self.__iter__
+            self.hosts = self.__iter__
 
     @property
     def packed(self):
@@ -2153,7 +2153,7 @@ class IPv6Network(_BaseV6, _BaseNetwork):
                                            int(self.netmask))
 
         if self._prefixlen == (self._max_prefixlen - 1):
-            self.iterhosts = self.__iter__
+            self.hosts = self.__iter__
 
     def __str__(self):
         return '%s/%d' % (str(self.network_address),
@@ -2191,4 +2191,3 @@ class IPv6Network(_BaseV6, _BaseNetwork):
     @property
     def with_hostmask(self):
         return '%s/%s' % (str(self.network_address), str(self.hostmask))
-
