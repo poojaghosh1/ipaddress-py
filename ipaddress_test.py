@@ -119,6 +119,8 @@ class IpaddrUnitTest(unittest.TestCase):
         AssertInvalidIP(":1:2:3:4:5:6:7")
         AssertInvalidIP("1:2:3:4:5:6:7:")
         AssertInvalidIP(":1:2:3:4:5:6:")
+        AssertInvalidIP("1000")
+        AssertInvalidIP("1000000000000000")
 
         self.assertRaises(ipaddress.AddressValueError,
                           ipaddress.IPv4Interface, '')

@@ -1249,7 +1249,8 @@ class IPv4Address(_BaseV4, _BaseAddress):
             return
 
         # Constructing from a packed address
-        if isinstance(address, bytes) and len(address) == 4:
+        if (not isinstance(address, str) and
+            isinstance(address, bytes) and len(address) == 4):
             self._ip = struct.unpack('!I', address)[0]
             return
 
@@ -1985,7 +1986,8 @@ class IPv6Address(_BaseV6, _BaseAddress):
             return
 
         # Constructing from a packed address
-        if isinstance(address, bytes) and len(address) == 16:
+        if (not isinstance(address, str) and
+            isinstance(address, bytes) and len(address) == 16):
             tmp = struct.unpack('!QQ', address)
             self._ip = (tmp[0] << 64) | tmp[1]
             return
